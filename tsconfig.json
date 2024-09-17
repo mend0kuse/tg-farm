@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "moduleDetection": "force",
+        "module": "preserve",
+        "resolveJsonModule": true,
+        "allowJs": true,
+        "esModuleInterop": true,
+        "isolatedModules": true,
+        "target": "es2017",
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "strictPropertyInitialization": true,
+        "skipLibCheck": true
+    }
+}

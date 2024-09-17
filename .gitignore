@@ -1,0 +1,6 @@
+/node_modules
+.env
+accounts.xlsx
+.DS_Store
+/sessions
+proxies.txt
