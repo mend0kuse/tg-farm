@@ -80,29 +80,27 @@ const processAccounts = async () => {
         results.push(await createAccount(i + 1));
     }
 
-    const workBook = xlsx.utils.book_new();
+    const pathToFile = path.join(__dirname, '..', 'accounts.xlsx');
+    if (fs.existsSync(pathToFile)) {
+        const workbook = xlsx.readFile(pathToFile);
 
-    const workSheet = xlsx.utils.aoa_to_sheet([
-        [
-            '#',
-            'Телеграм id',
-            'Телефон',
-            'Никнейм',
-            'Сессия',
-            'Мнемоника ton',
-            'Адрес ton',
-            'Прокси',
-            'User agent',
-        ],
-        ...results.map((data) => Object.values(data)),
-    ]);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
 
-    xlsx.utils.book_append_sheet(workBook, workSheet, 'Telegram farm');
+        const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
-    const outputPath = path.join(__dirname, `output.xlsx`);
-    xlsx.writeFile(workBook, outputPath);
+        jsonData.push(...results.map((data) => Object.values(data)));
 
-    baseLogger.log('Результаты сохранены в файл');
+        const newWorksheet = xlsx.utils.aoa_to_sheet(jsonData);
+
+        workbook.Sheets[sheetName] = newWorksheet;
+
+        xlsx.writeFile(workbook, pathToFile);
+
+        baseLogger.log('Успешно добавлен');
+    } else {
+        baseLogger.log('Файл не найден');
+    }
 
     return;
 };
