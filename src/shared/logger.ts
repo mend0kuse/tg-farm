@@ -5,6 +5,18 @@ export class BaseLogger {
         console.log(this.makePrefix(), ...message);
     }
 
+    accentLog(...message: any[]) {
+        const res = `
+        ----------
+        ----------
+            ${this.makePrefix()} ${message.join(', ')}}
+        ----------
+        ----------
+        `;
+
+        console.log(res);
+    }
+
     warn(...message: any[]) {
         console.warn(this.makePrefix(), ...message);
     }
