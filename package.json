@@ -23,6 +23,7 @@
         "@ton/crypto": "^3.3.0",
         "@ton/ton": "^15.0.0",
         "axios": "^1.7.7",
+        "bybit-api": "^3.10.18",
         "crypto": "^1.0.1",
         "dotenv": "^16.4.5",
         "moment-timezone": "^0.5.45",
