@@ -5,7 +5,9 @@
     "main": "index.js",
     "scripts": {
         "make": "npx tsx ./src/accounts-generator.ts",
-        "launch:empire": "npx tsx ./src/xempire/launcher.ts"
+        "launch:empire": "npx tsx ./src/xempire/launcher.ts",
+        "build": "tsc",
+        "start": "node --experimental-specifier-resolution=node dist/xempire/launcher.js"
     },
     "keywords": [],
     "author": "",
