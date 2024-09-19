@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import axios, { AxiosError, AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
+import axios, { AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { extractWebAppData } from '../shared/telegram/extract-web-app-data';
 import { BaseLogger } from '../shared/logger';
 import { random, randomArrayItem, shuffleArray, sleep } from '../shared/utils';
@@ -34,8 +34,10 @@ export class XEmpire {
     private fullProfile: any = null;
     private mnemonic;
     private index;
+    private peer: null | tl.TypeInputPeer = null;
     private refCode;
     private logger;
+    private continuousFloodErrors = 0;
     private externalData: {
         youtube: Record<string, string | number>;
         investmentComboKeys: string[] | null;
@@ -102,12 +104,16 @@ export class XEmpire {
         mainLoop: while (true) {
             cycleNumber++;
 
-            const firstCycleDelay = random(1, 10);
-            const delayInMinutes = cycleNumber > 1 ? getDelayByLevel(this.level) : firstCycleDelay;
+            const firstCycleDelayMinutes = random(1, 30);
+
+            const delayInMinutes = this.level
+                ? getDelayByLevel(this.level)
+                : firstCycleDelayMinutes;
+
             this.logger.accentLog(
                 `Задержка ${delayInMinutes} минут перед стартом прохода #${cycleNumber}...`,
                 cycleNumber > 1 ? `Текущий уровень ${this.level}. ` : ' ',
-                `Кол-во друзей ${this.fullProfile.friends}`,
+                this.fullProfile ? `Кол-во друзей ${this.fullProfile.friends.length}` : '',
             );
 
             await sleep(delayInMinutes * 60);
@@ -121,15 +127,30 @@ export class XEmpire {
                     await this.login();
                     break loginLoop;
                 } catch (error) {
-                    if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                    if (loginAttempts > 5) {
+                        this.logger.error(`5 Неудачных логинов, пропускаем круг...`);
+
                         await sendTelegramBotNotification(
-                            `[EMPIRE] SECOND FLOOD_ERROR. Воркер ${this.index}`,
+                            `[EMPIRE] 5 Неудачных логинов. Пользователь #${
+                                this.index
+                            }. Ошибка: ${this.handleError(loginError)}`,
                         );
 
-                        this.logger.accentLog(`2ой flood wait ${error.seconds * 2}`);
+                        continue mainLoop;
+                    }
+
+                    if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                        this.continuousFloodErrors++;
+                        await sendTelegramBotNotification(
+                            `[EMPIRE] FLOOD_ERROR. Воркер ${this.index}. Ошибка по флуду #${this.continuousFloodErrors}`,
+                        );
+
+                        this.logger.accentLog(
+                            `Flood wait ${error.seconds * this.continuousFloodErrors}`,
+                        );
                         await sleep(error.seconds * 2);
 
-                        continue mainLoop;
+                        return;
                     }
 
                     loginError = error;
@@ -139,18 +160,6 @@ export class XEmpire {
 
                     continue loginLoop;
                 }
-            }
-
-            if (loginAttempts >= 5) {
-                this.logger.error(`5 Неудачных логинов, пропускаем круг...`);
-
-                await sendTelegramBotNotification(
-                    `[EMPIRE] 5 Неудачных логинов. Пользователь #${
-                        this.index
-                    }. Ошибка: ${this.handleError(loginError)}`,
-                );
-
-                continue mainLoop;
             }
 
             this.fullProfile = await this.getProfile();
@@ -776,22 +785,29 @@ export class XEmpire {
     }
 
     async getWebAppDataUrl() {
-        const peer = await this.telegramClient.resolvePeer('empirebot');
+        if (!this.peer) {
+            this.peer = await this.telegramClient.resolvePeer('empirebot');
+        }
 
-        const response = await this.telegramClient.call({
-            _: 'messages.requestAppWebView',
-            peer: peer,
-            app: {
-                _: 'inputBotAppShortName',
-                botId: toInputUser(peer),
-                shortName: 'game',
-            },
-            platform: 'Android',
-            startParam: this.refCode,
-            writeAllowed: true,
-        });
+        try {
+            const response = await this.telegramClient.call({
+                _: 'messages.requestAppWebView',
+                peer: this.peer,
+                app: {
+                    _: 'inputBotAppShortName',
+                    botId: toInputUser(this.peer),
+                    shortName: 'game',
+                },
+                platform: 'Android',
+                startParam: this.refCode,
+                writeAllowed: true,
+            });
 
-        return response.url;
+            return response.url;
+        } catch (error) {
+            this.peer = null;
+            throw error;
+        }
     }
 
     /**
@@ -805,8 +821,10 @@ export class XEmpire {
 
         try {
             url = await this.getWebAppDataUrl();
+            this.continuousFloodErrors = 0;
         } catch (e) {
             if (tl.RpcError.is(e, 'FLOOD_WAIT_%d')) {
+                this.continuousFloodErrors++;
                 this.logger.error(`FLOOD_WAIT Ожидание ${e.seconds + 60} секунд...`);
                 await sleep(e.seconds + 60);
                 url = await this.getWebAppDataUrl();
@@ -818,6 +836,8 @@ export class XEmpire {
         const extractedData = extractWebAppData(url);
         const params = new URLSearchParams(extractedData);
         const userHash = params.get('hash') ?? '';
+
+        this.logger.log('REF CODE: ' + this.refCode);
 
         const login_data = {
             data: {

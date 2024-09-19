@@ -28,6 +28,6 @@ const user = workerData as TAccountData & { refCode: string };
 
         parentPort?.postMessage(`Воркер ${user.index} окончен`);
     } catch (error) {
-        baseLogger.error('xempire crash', user.username);
+        baseLogger.error(`X_CRASH_${user.index}`, error);
     }
 })();

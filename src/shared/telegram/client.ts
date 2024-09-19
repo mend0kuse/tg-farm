@@ -1,7 +1,8 @@
 import { TelegramClient } from '@mtcute/node';
 import { APP_CONFIG } from '../../config';
 import { TSocks5Proxy, terminalPrompt } from '../utils';
-import { SocksTcpTransport } from '@mtcute/socks-proxy';
+import { SocksProxyConnectionError, SocksTcpTransport } from '@mtcute/socks-proxy';
+import { baseLogger } from '../logger';
 
 export const createTelegramClientBySession = async (args?: {
     session?: string;
@@ -40,8 +41,20 @@ export const createTelegramClientBySession = async (args?: {
         password: async () => await terminalPrompt('Password > '),
     });
 
+    tg.onError((err) => {
+        if (isProxyError(err)) {
+            return;
+        }
+
+        baseLogger.error(err);
+    });
+
     const sessionResult = await tg.exportSession();
     // baseLogger.log('session', session);
 
     return { telegramClient: tg, sessionResult };
+};
+
+const isProxyError = (err: unknown): err is SocksProxyConnectionError => {
+    return err instanceof SocksProxyConnectionError;
 };
