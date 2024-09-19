@@ -1,16 +1,16 @@
 import { workerData, parentPort } from 'worker_threads';
 import { baseLogger } from '../shared/logger';
-import { createTelegramClientBySession } from '../shared/telegram/client';
 import { parseSocks5Proxy } from '../shared/utils';
 import { XEmpire } from './xempire';
 import { TAccountData } from '../accounts-generator';
+import { telegramApi } from '../shared/telegram/telegram-api';
 
 const user = workerData as TAccountData & { refCode: string };
 
 (async () => {
     baseLogger.log(`Воркер ${user.index} Старт`);
 
-    const { telegramClient } = await createTelegramClientBySession({
+    const { telegramClient } = await telegramApi.createClientBySession({
         session: user.session,
         proxy: parseSocks5Proxy(user.proxy),
         sessionName: user.index.toString(),

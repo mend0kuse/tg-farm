@@ -4,9 +4,9 @@ import fs from 'fs';
 import xlsx from 'xlsx';
 import { baseLogger } from './shared/logger';
 import { getRandomAndroidUserAgent } from './shared/user-agent';
-import { createTelegramClientBySession as createTelegramClientWithSession } from './shared/telegram/client';
-import { createTonWallet } from './shared/ton/wallet';
 import { fileURLToPath } from 'url';
+import { telegramApi } from './shared/telegram/telegram-api';
+import { tonUtility } from './shared/ton/ton-utility';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,14 +45,14 @@ const createAccount = async (count: number): Promise<TAccountData> => {
     const proxy = randomArrayItem(proxies);
     const index = await terminalPrompt('Индекс аккаунта:');
 
-    const { telegramClient, sessionResult } = await createTelegramClientWithSession({
+    const { telegramClient, sessionResult } = await telegramApi.createClientBySession({
         proxy: parseSocks5Proxy(proxy ?? ''),
         sessionName: index,
     });
 
     const me = await telegramClient.getMe();
 
-    const { mnemonic, address } = await createTonWallet();
+    const { mnemonic, address } = await tonUtility.createWallet();
 
     return {
         index: Number(index),

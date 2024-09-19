@@ -1,6 +1,6 @@
+import { tonUtility } from './../shared/ton/ton-utility';
 import crypto from 'crypto';
 import axios, { AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
-import { extractWebAppData } from '../shared/telegram/extract-web-app-data';
 import { BaseLogger } from '../shared/logger';
 import { random, randomArrayItem, shuffleArray, sleep } from '../shared/utils';
 import { calculateBestSkill, calculateBet, calculateTapPower, getDelayByLevel } from './utils';
@@ -15,15 +15,13 @@ import {
     storeStateInit,
     toNano,
 } from '@ton/ton';
-import { getPublicKeyHex } from '../shared/ton/wallet';
 import { Api, TonApiClient } from '@ton-api/client';
 import { ContractAdapter } from '@ton-api/ton-adapter';
 import { APP_CONFIG } from '../config';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { TelegramClient, tl } from '@mtcute/node';
 import { toInputUser } from '@mtcute/node/utils.js';
-import { sendBotNotification as sendTelegramBotNotification } from '../shared/telegram/send-notification';
-import { joinChannel } from '../shared/telegram/join-channel';
+import { telegramApi } from '../shared/telegram/telegram-api';
 
 export class XEmpire {
     private API_URL = 'https://api.xempire.io';
@@ -130,7 +128,7 @@ export class XEmpire {
                     if (loginAttempts > 5) {
                         this.logger.error(`5 Неудачных логинов, пропускаем круг...`);
 
-                        await sendTelegramBotNotification(
+                        await telegramApi.sendBotNotification(
                             `[EMPIRE] 5 Неудачных логинов. Пользователь #${
                                 this.index
                             }. Ошибка: ${this.handleError(loginError)}`,
@@ -141,7 +139,7 @@ export class XEmpire {
 
                     if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
                         this.continuousFloodErrors++;
-                        await sendTelegramBotNotification(
+                        await telegramApi.sendBotNotification(
                             `[EMPIRE] FLOOD_ERROR. Воркер ${this.index}. Ошибка по флуду #${this.continuousFloodErrors}`,
                         );
 
@@ -279,27 +277,10 @@ export class XEmpire {
         }
 
         try {
-            const client = new Api(
-                new TonApiClient({
-                    baseUrl: 'https://tonapi.io',
-                    apiKey: APP_CONFIG.TON_API_KEY,
-                }),
-            );
-
-            const adapter = new ContractAdapter(client);
-
-            const keyPair = await mnemonicToPrivateKey(this.mnemonic);
-
-            const wallet = WalletContractV5R1.create({
-                workchain: 0,
-                publicKey: keyPair.publicKey,
-            });
-
-            const contract = adapter.open(wallet);
-            const balance = await contract.getBalance();
+            const balance = await tonUtility.getBalanceByMnemonic(this.mnemonic);
 
             this.logger.log(
-                `Адрес: ${wallet.address.toString()}
+                `Адрес: ${await tonUtility.getWalletAddress(this.mnemonic)}
                 Баланс на кошельке: ${fromNano(balance)} ton`,
             );
 
@@ -307,6 +288,10 @@ export class XEmpire {
                 this.logger.log('Недостаточно баланса для транзакции');
                 return;
             }
+
+            const keyPair = await tonUtility.getKeyPair(this.mnemonic);
+            const wallet = await tonUtility.getWalletContract(this.mnemonic);
+            const contract = tonUtility.contractAdapter.open(wallet);
 
             await sleep(random(1, 2));
 
@@ -565,7 +550,7 @@ export class XEmpire {
                 await sleep(random(2, 4));
 
                 try {
-                    await joinChannel(this.telegramClient, checkData);
+                    await telegramApi.joinChannel(this.telegramClient, checkData);
                     this.logger.log(`Вступление в канал ${checkData} успешно`);
                 } catch (error) {
                     this.logger.error(`Ошибка при вступлении в канал: `, this.handleError(error));
@@ -833,7 +818,7 @@ export class XEmpire {
             }
         }
 
-        const extractedData = extractWebAppData(url);
+        const extractedData = telegramApi.extractWebAppData(url);
         const params = new URLSearchParams(extractedData);
         const userHash = params.get('hash') ?? '';
 
@@ -1078,7 +1063,7 @@ export class XEmpire {
                     const answer = this.externalData?.youtube[info.url];
 
                     if (this.externalData?.youtube && !answer) {
-                        await sendTelegramBotNotification(
+                        await telegramApi.sendBotNotification(
                             `[X-EMPIRE] Нужен код для видео ${info.url}`,
                         );
                         this.logger.log('Успешно отправлено уведомление о новом видео');
@@ -1183,21 +1168,9 @@ export class XEmpire {
         return this.fullProfile?.quests.find((quest: any) => quest.key === key);
     }
 
-    async getWalletContract() {
-        return WalletContractV5R1.create({
-            workchain: 0,
-            publicKey: (await mnemonicToPrivateKey(this.mnemonic)).publicKey,
-        });
-    }
-
     async getWalletPayload() {
-        const wallet = await this.getWalletContract();
-
-        const walletStateInit = beginCell()
-            .store(storeStateInit(wallet.init))
-            .endCell()
-            .toBoc()
-            .toString('base64');
+        const wallet = await tonUtility.getWalletContract(this.mnemonic);
+        const walletStateInit = tonUtility.packStateInit(wallet.init);
 
         return {
             wallet: {
@@ -1219,7 +1192,7 @@ export class XEmpire {
                     address: wallet.address.toRawString(),
                     chain: '-239',
                     walletStateInit,
-                    publicKey: await getPublicKeyHex(this.mnemonic),
+                    publicKey: await tonUtility.getPublicKeyHex(this.mnemonic),
                 },
                 name: 'Tonkeeper',
                 appName: 'tonkeeper',
