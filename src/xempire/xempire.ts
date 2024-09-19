@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import axios, { AxiosInstance, isAxiosError } from 'axios';
+import axios, { AxiosError, AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { extractWebAppData } from '../shared/telegram/extract-web-app-data';
 import { BaseLogger } from '../shared/logger';
 import { random, randomArrayItem, shuffleArray, sleep } from '../shared/utils';
@@ -29,6 +29,7 @@ export class XEmpire {
     private API_URL = 'https://api.xempire.io';
 
     private api: AxiosInstance;
+    private isAuthorized: boolean = false;
     private telegramClient: TelegramClient;
     private fullProfile: any = null;
     private mnemonic;
@@ -178,6 +179,10 @@ export class XEmpire {
 
             for (const promise of [...actions, ...actionsSecondary]) {
                 try {
+                    if (!this.isAuthorized) {
+                        break;
+                    }
+
                     await sleep(random(5, 10));
                     await promise.call(this);
                     await sleep(random(1, 2));
@@ -323,6 +328,10 @@ export class XEmpire {
         this.logger.log(`Старт апгрейдов..`);
 
         while (true) {
+            if (!this.isAuthorized) {
+                break;
+            }
+
             await sleep(random(3, 5));
 
             const bestSkill = calculateBestSkill({
@@ -824,6 +833,7 @@ export class XEmpire {
 
             if (response.data.success) {
                 this.setApiKey(userHash);
+                this.isAuthorized = true;
             } else {
                 throw new Error(response.data.error);
             }
@@ -1117,6 +1127,10 @@ export class XEmpire {
 
     handleError(error: unknown) {
         if (isAxiosError(error)) {
+            if (error.status === HttpStatusCode.Unauthorized) {
+                this.isAuthorized = false;
+            }
+
             return `Axios error: ${error.status} ${error.code} ${error.message} `;
         } else {
             return error as string;
