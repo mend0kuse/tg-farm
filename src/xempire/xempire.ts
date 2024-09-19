@@ -99,7 +99,7 @@ export class XEmpire {
             .then((response) => this.logger.log('IP =', response.data))
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
-        while (true) {
+        mainLoop: while (true) {
             cycleNumber++;
 
             const firstCycleDelay = random(1, 10);
@@ -115,17 +115,21 @@ export class XEmpire {
 
             let loginAttempts = 0;
             let loginError;
-            while (true) {
+
+            loginLoop: while (true) {
                 try {
                     await this.login();
-                    break;
+                    break loginLoop;
                 } catch (error) {
                     if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
                         await sendTelegramBotNotification(
-                            `[EMPIRE] FLOOD_ERROR. Воркер ${this.index}`,
+                            `[EMPIRE] SECOND FLOOD_ERROR. Воркер ${this.index}`,
                         );
 
-                        return;
+                        this.logger.accentLog(`2ой flood wait ${error.seconds * 2}`);
+                        await sleep(error.seconds * 2);
+
+                        continue mainLoop;
                     }
 
                     loginError = error;
@@ -133,7 +137,7 @@ export class XEmpire {
                     await sleep(random(3, 5));
                     loginAttempts++;
 
-                    continue;
+                    continue loginLoop;
                 }
             }
 
@@ -146,11 +150,11 @@ export class XEmpire {
                     }. Ошибка: ${this.handleError(loginError)}`,
                 );
 
-                continue;
+                continue mainLoop;
             }
 
             this.fullProfile = await this.getProfile();
-            if (!this.fullProfile) continue;
+            if (!this.fullProfile) continue mainLoop;
 
             await sleep(random(1, 2));
 
