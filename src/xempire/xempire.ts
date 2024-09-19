@@ -23,6 +23,7 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import { TelegramClient, tl } from '@mtcute/node';
 import { toInputUser } from '@mtcute/node/utils.js';
 import { sendBotNotification as sendTelegramBotNotification } from '../shared/telegram/send-notification';
+import { joinChannel } from '../shared/telegram/join-channel';
 
 export class XEmpire {
     private API_URL = 'https://api.xempire.io';
@@ -168,7 +169,7 @@ export class XEmpire {
                 this.completeRiddleAndRebus,
                 this.completeImprovements,
                 this.completeBoxes,
-                this.completeAvailableQuests,
+                this.claimCompletedQuests,
                 this.completeDailyQuests,
             ];
 
@@ -533,17 +534,33 @@ export class XEmpire {
             (quest: any) => !this.fullProfile.quests.find((q: any) => q.key === quest.key),
         );
 
-        for (const { isArchived, checkType, key, requiredLevel } of actualDbQuests) {
-            if (requiredLevel > this.level || isArchived || checkType !== 'fakeCheck') {
+        for (const { isArchived, checkType, key, requiredLevel, checkData } of actualDbQuests) {
+            if (requiredLevel > this.level || isArchived) {
                 continue;
             }
 
-            await sleep(random(2, 4));
-            await this.claimQuestReward(key);
+            if (checkType === 'telegramChannel') {
+                await sleep(random(2, 4));
+
+                try {
+                    await joinChannel(this.telegramClient, checkData);
+                    this.logger.log(`Вступление в канал ${checkData} успешно`);
+                } catch (error) {
+                    this.logger.error(`Ошибка при вступлении в канал: `, this.handleError(error));
+                }
+
+                await sleep(random(5, 10));
+                await this.completeQuest(key);
+            }
+
+            if (checkType === 'fakeCheck') {
+                await sleep(random(5, 10));
+                await this.claimQuestReward(key);
+            }
         }
     }
 
-    async completeAvailableQuests() {
+    async claimCompletedQuests() {
         this.logger.log(`Выполнение доступных заданий`);
 
         for (const quest of this.fullProfile.quests) {
@@ -640,7 +657,7 @@ export class XEmpire {
                 throw new Error(response.error);
             }
 
-            await sleep(random(2, 4));
+            await sleep(random(4, 6));
 
             await this.claimQuestReward(quest, code);
         } catch (error) {

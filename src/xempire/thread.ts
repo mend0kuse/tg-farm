@@ -21,7 +21,6 @@ const user = workerData as TAccountData & { refCode: string };
             telegramClient,
             index: user.index,
             ua: user.userAgent,
-            username: user.username,
             proxy: user.proxy,
             mnemonic: user.mnemonicTon,
             refCode: user.refCode,
