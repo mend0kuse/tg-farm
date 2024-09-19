@@ -7,7 +7,6 @@ import { baseLogger } from '../shared/logger';
 import { Worker } from 'worker_threads';
 import { REFERRAL_MAP as REFERRAL_SYSTEM } from './constants';
 import { APP_CONFIG } from '../config';
-import { terminalPrompt } from '../shared/utils';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,7 +64,7 @@ async function createUserThread(user: TAccountData) {
     return new Promise((resolve, reject) => {
         const refCode = getRefByIndex(user.index);
 
-        const worker = new Worker(path.join(__dirname, 'thread.ts'), {
+        const worker = new Worker(path.join(__dirname, 'thread'), {
             workerData: { ...user, refCode: refCode ?? '' },
         });
 
@@ -81,14 +80,21 @@ async function createUserThread(user: TAccountData) {
 }
 
 async function start() {
+    // const excluded: number[] = [15, 29, 27, 24, 22, 21];
+    const excluded: number[] = [];
+
     try {
-        const allOrSinge = await terminalPrompt('Индекс для запуска. n если все');
-        if (allOrSinge === 'n') {
-            await Promise.allSettled(users.map((user) => createUserThread(user)));
-        } else {
-            const user = users.find((user) => user.index === Number(allOrSinge));
-            user && (await createUserThread(user));
-        }
+        // const allOrSinge = await terminalPrompt('Индекс для запуска. n если все: ');
+        // if (allOrSinge === 'n') {
+        await Promise.allSettled(
+            users
+                .filter((user) => !excluded.includes(user.index))
+                .map((user) => createUserThread(user)),
+        );
+        // // } else {
+        // const user = users.find((user) => user.index === Number(allOrSinge));
+        // user && (await createUserThread(user));
+        // // }
 
         baseLogger.error('Выполнено:', users.length);
     } catch (error) {

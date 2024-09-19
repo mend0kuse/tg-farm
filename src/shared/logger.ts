@@ -9,7 +9,7 @@ export class BaseLogger {
         const res = `
         ----------
         ----------
-            ${this.makePrefix()} ${message.join(', ')}}
+            ${this.makePrefix()} ${message.join(', ')}
         ----------
         ----------
         `;

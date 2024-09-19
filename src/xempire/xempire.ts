@@ -20,7 +20,7 @@ import { Api, TonApiClient } from '@ton-api/client';
 import { ContractAdapter } from '@ton-api/ton-adapter';
 import { APP_CONFIG } from '../config';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import { TelegramClient } from '@mtcute/node';
+import { TelegramClient, tl } from '@mtcute/node';
 import { toInputUser } from '@mtcute/node/utils.js';
 import { sendBotNotification as sendTelegramBotNotification } from '../shared/telegram/send-notification';
 
@@ -43,7 +43,6 @@ export class XEmpire {
         proxy,
         ua,
         telegramClient,
-        username,
         mnemonic,
         refCode,
         index,
@@ -51,12 +50,11 @@ export class XEmpire {
         proxy?: string;
         ua: string;
         telegramClient: TelegramClient;
-        username: string;
         mnemonic: string;
         refCode: string;
         index: number;
     }) {
-        this.logger = new BaseLogger(`EMPIRE_${index}__${username}`);
+        this.logger = new BaseLogger(`X_${index}`);
 
         this.telegramClient = telegramClient;
         this.mnemonic = mnemonic.split(' ');
@@ -90,26 +88,27 @@ export class XEmpire {
     }
 
     async start() {
-        this.logger.log(`Начало сбора`);
         let cycleNumber = 0;
 
-        this.logger.log('Запрос за ip..');
         this.api
             .get('https://ifconfig.me/ip', {
                 baseURL: '',
             })
             .then((response) => this.logger.log('IP =', response.data))
-            .catch((error) => this.logger.error(error));
+            .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         while (true) {
             cycleNumber++;
 
-            const loginDelay = random(60, 120);
-            this.logger.log(
-                `Задержка ${Math.round(loginDelay / 60)} минут перед логином #${cycleNumber}...`,
+            const firstCycleDelay = random(1, 10);
+            const delayInMinutes = cycleNumber > 1 ? getDelayByLevel(this.level) : firstCycleDelay;
+            this.logger.accentLog(
+                `Задержка ${delayInMinutes} минут перед стартом прохода #${cycleNumber}...`,
+                cycleNumber > 1 ? `Текущий уровень ${this.level}. ` : ' ',
+                `Кол-во друзей ${this.fullProfile.friends}`,
             );
-            await sleep(loginDelay);
 
+            await sleep(delayInMinutes * 60);
             await this.getExternalData();
 
             let loginAttempts = 0;
@@ -119,6 +118,14 @@ export class XEmpire {
                     await this.login();
                     break;
                 } catch (error) {
+                    if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                        await sendTelegramBotNotification(
+                            `[EMPIRE] FLOOD_ERROR. Воркер ${this.index}`,
+                        );
+
+                        return;
+                    }
+
                     loginError = error;
                     this.logger.error(`Неудачный логин, задержка...`, this.handleError(error));
                     await sleep(random(3, 5));
@@ -143,31 +150,32 @@ export class XEmpire {
             this.fullProfile = await this.getProfile();
             if (!this.fullProfile) continue;
 
-            const delayInMinutes = getDelayByLevel(this.level);
-            this.logger.log(`Задержка ${delayInMinutes} минут перед стартом #${cycleNumber}...`);
-            this.logger.log(`Текущий уровень ${this.level}`);
-            await sleep(delayInMinutes * 60);
+            await sleep(random(1, 2));
 
             await this.claimOfflineBonus();
 
             const actions = [
+                this.completeFakeCheckQuests,
                 this.completeCheckIn,
                 this.connectWallet,
-                this.sendTransaction,
                 this.completeFriends,
+                this.completeInvestments,
+                this.completeMining,
+            ];
+
+            const actionsSecondary = [
+                this.sendTransaction,
+                this.completeRiddleAndRebus,
+                this.completeImprovements,
+                this.completeBoxes,
                 this.completeAvailableQuests,
                 this.completeDailyQuests,
-                this.completeFakeCheckQuests,
-                this.completeRiddleAndRebus,
-                this.completeInvestments,
-                this.completeImprovements,
-                this.completeMining,
-                this.completeBoxes,
             ];
 
             shuffleArray(actions);
+            shuffleArray(actionsSecondary);
 
-            for (const promise of actions) {
+            for (const promise of [...actions, ...actionsSecondary]) {
                 try {
                     await sleep(random(5, 10));
                     await promise.call(this);
@@ -177,8 +185,6 @@ export class XEmpire {
                     this.logger.error(`Ошибка выполнения промиса:`, this.handleError(error));
                 }
             }
-
-            this.logger.log(`Завершение прохода #${cycleNumber}`);
         }
     }
 
@@ -312,15 +318,14 @@ export class XEmpire {
 
     async completeImprovements() {
         let attempts = 0;
-        let previousBestSkillKey = null;
-        let lastFailedSkillKey = null;
+        const ignoredSkills: string[] = [];
         this.logger.log(`Старт апгрейдов..`);
 
         while (true) {
             await sleep(random(3, 5));
 
             const bestSkill = calculateBestSkill({
-                ignoredSkills: [previousBestSkillKey, lastFailedSkillKey],
+                ignoredSkills,
                 allSKills: this.fullProfile.dbData.dbSkills,
                 balance: this.fullProfile.hero?.money,
                 friends: this.fullProfile.friends.length,
@@ -330,7 +335,7 @@ export class XEmpire {
             });
 
             if (!bestSkill) {
-                if (attempts < 3) {
+                if (attempts < 5) {
                     this.logger.log(`Скиллы закончились. Немного подождем...`);
                     await sleep(random(30, 60));
                     await this.syncBalance();
@@ -339,25 +344,18 @@ export class XEmpire {
                     continue;
                 }
 
-                this.logger.log(`Завершение прокачки`);
+                this.logger.log(`Завершение прокачки...`);
                 break;
             }
 
             try {
                 await this.improveSkill(bestSkill.key);
-                previousBestSkillKey = bestSkill.key;
-                lastFailedSkillKey = null;
             } catch (error) {
-                lastFailedSkillKey = bestSkill.key;
+                ignoredSkills.push(bestSkill.key);
                 this.logger.error(`Ошибка прокачки ${bestSkill.key}...`, this.handleError(error));
                 await sleep(random(2, 3));
-
-                const profile = await this.getProfile();
-                if (profile) {
-                    this.fullProfile = profile;
-                } else {
-                    break;
-                }
+                await this.syncBalance();
+                attempts++;
             }
         }
     }
@@ -747,18 +745,12 @@ export class XEmpire {
         }
     }
 
-    /**
-     * Вход в игру
-     */
-
-    async login() {
-        this.logger.log(`Логин`);
-
+    async getWebAppDataUrl() {
         const peer = await this.telegramClient.resolvePeer('empirebot');
 
         const response = await this.telegramClient.call({
             _: 'messages.requestAppWebView',
-            peer,
+            peer: peer,
             app: {
                 _: 'inputBotAppShortName',
                 botId: toInputUser(peer),
@@ -769,7 +761,31 @@ export class XEmpire {
             writeAllowed: true,
         });
 
-        const extractedData = extractWebAppData(response.url);
+        return response.url;
+    }
+
+    /**
+     * Вход в игру
+     */
+
+    async login() {
+        this.logger.log(`Логин`);
+
+        let url = '';
+
+        try {
+            url = await this.getWebAppDataUrl();
+        } catch (e) {
+            if (tl.RpcError.is(e, 'FLOOD_WAIT_%d')) {
+                this.logger.error(`FLOOD_WAIT Ожидание ${e.seconds + 60} секунд...`);
+                await sleep(e.seconds + 60);
+                url = await this.getWebAppDataUrl();
+            } else {
+                throw e;
+            }
+        }
+
+        const extractedData = extractWebAppData(url);
         const params = new URLSearchParams(extractedData);
         const userHash = params.get('hash') ?? '';
 
@@ -797,8 +813,7 @@ export class XEmpire {
 
             return true;
         } catch (error) {
-            this.logger.error('Ошибка логина!', this.handleError(error));
-            throw new Error('Ошибка логина!');
+            throw new Error(this.handleError(error));
         }
     }
 
@@ -819,6 +834,8 @@ export class XEmpire {
             const dataAfter = {
                 data: { lang: responseAll.data.data.settings?.lang || 'en' },
             };
+
+            await sleep(random(1, 2));
 
             const responseAfter = await this.api.post<{ data: any }>(
                 '/user/data/after',
@@ -1066,7 +1083,11 @@ export class XEmpire {
     }
 
     get level() {
-        return this.fullProfile.hero.level;
+        try {
+            return this.fullProfile.hero.level;
+        } catch (error) {
+            return null;
+        }
     }
 
     setApiKey(userHash: string) {
@@ -1104,7 +1125,7 @@ export class XEmpire {
     }
 
     isCompletedQuest(key: string) {
-        return this.fullProfile.quests.find((quest: any) => quest.key === key);
+        return this.fullProfile?.quests.find((quest: any) => quest.key === key);
     }
 
     async getWalletContract() {
