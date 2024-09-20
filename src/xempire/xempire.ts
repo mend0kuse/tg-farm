@@ -5,18 +5,7 @@ import { BaseLogger } from '../shared/logger';
 import { random, randomArrayItem, shuffleArray, sleep } from '../shared/utils';
 import { calculateBestSkill, calculateBet, calculateTapPower, getDelayByLevel } from './utils';
 import moment from 'moment-timezone';
-import { mnemonicToPrivateKey } from '@ton/crypto';
-import {
-    SendMode,
-    WalletContractV5R1,
-    beginCell,
-    fromNano,
-    internal,
-    storeStateInit,
-    toNano,
-} from '@ton/ton';
-import { Api, TonApiClient } from '@ton-api/client';
-import { ContractAdapter } from '@ton-api/ton-adapter';
+import { SendMode, fromNano, internal, toNano } from '@ton/ton';
 import { APP_CONFIG } from '../config';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { TelegramClient, tl } from '@mtcute/node';
@@ -138,17 +127,20 @@ export class XEmpire {
                     }
 
                     if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                        await this.telegramClient.close();
+                        await this.telegramClient.start();
+
+                        if (this.continuousFloodErrors > 4) {
+                            await telegramApi.sendBotNotification(
+                                `[EMPIRE]. Воркер ${this.index}. Ошибка по флуду #${this.continuousFloodErrors}. Выключение...`,
+                            );
+
+                            return;
+                        }
+
                         this.continuousFloodErrors++;
-                        await telegramApi.sendBotNotification(
-                            `[EMPIRE] FLOOD_ERROR. Воркер ${this.index}. Ошибка по флуду #${this.continuousFloodErrors}`,
-                        );
 
-                        this.logger.accentLog(
-                            `Flood wait ${error.seconds * this.continuousFloodErrors}`,
-                        );
-                        await sleep(error.seconds * 2);
-
-                        return;
+                        continue mainLoop;
                     }
 
                     loginError = error;
@@ -935,7 +927,8 @@ export class XEmpire {
 
             this.logger.log(`Успешно инвестировали в фонд:`, fund);
 
-            this.updateProfileHero(response.data.hero);
+            await sleep(random(1, 3));
+            await this.syncBalance();
         } catch (error) {
             this.logger.error('Ошибка инвестирования в фонд!', this.handleError(error));
         }

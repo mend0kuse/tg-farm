@@ -38,7 +38,7 @@ export class TelegramApi {
         sessionName?: string;
         proxy?: TSocks5Proxy | null;
     }) {
-        const { proxy, session = '', sessionName = '' } = args || {};
+        const { proxy, sessionName = '' } = args || {};
 
         const tg = new TelegramClient({
             apiId: APP_CONFIG.API_CLIENT_ID,
