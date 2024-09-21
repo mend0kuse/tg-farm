@@ -11,7 +11,7 @@ import { shuffleArray } from './shared/utils';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const users = excelUtility.getAccounts(path.join(__dirname, '..', '..', 'accounts.xlsx'));
+const users = excelUtility.getAccounts(path.join(__dirname, '..', 'accounts.xlsx'));
 
 const getRefByIndex = (index: number) => {
     const inv = REFERRAL_SYSTEM[index];
