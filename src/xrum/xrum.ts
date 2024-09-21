@@ -6,7 +6,7 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import { sleep, toInputUser } from '@mtcute/node/utils.js';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import crypto from 'crypto';
-import { random, randomArrayItem, shuffleArray } from '../shared/utils';
+import { random, shuffleArray } from '../shared/utils';
 import { tonUtility } from '../shared/ton/ton-utility';
 import { SendMode, fromNano, internal, toNano } from '@ton/core';
 
@@ -104,11 +104,7 @@ export class Xrum {
                         await this.telegramClient.start();
 
                         if (this.continuousFloodErrors > 4) {
-                            await telegramApi.sendBotNotification(
-                                `[HRUM]. Воркер ${this.account.index}. Ошибка по флуду #${this.continuousFloodErrors}. Выключение...`
-                            );
-
-                            return;
+                            throw new Error('CONTINUOS FLOOD ERROR');
                         }
 
                         this.continuousFloodErrors++;
@@ -153,10 +149,6 @@ export class Xrum {
                     this.logger.error('Ошибка выполнения промиса:', this.handleError(error));
                 }
             }
-
-            this.logger.accentLog('Sleep до следующего дня...');
-
-            await sleep(this.secondsUntilUTCHour(randomArrayItem([7, 8])));
         }
     }
 

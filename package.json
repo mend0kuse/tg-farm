@@ -5,9 +5,9 @@
     "main": "index.js",
     "scripts": {
         "make": "npx tsx ./src/accounts-generator.ts",
-        "launch:empire": "npx tsx ./src/xempire/launcher.ts",
+        "launch": "npx tsx ./src/launcher.ts",
         "build": "tsc",
-        "start": "node --experimental-specifier-resolution=node dist/xempire/launcher.js",
+        "start": "node --experimental-specifier-resolution=node dist/launcher.js",
         "lint": "eslint 'src/**/*.{ts,tsx,js}'",
         "lint:fix": "eslint 'src/**/*.{ts,tsx,js}' --fix",
         "format": "prettier --write 'src/**/*.{ts,tsx,js,json,css,md}'",

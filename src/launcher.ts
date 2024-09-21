@@ -6,6 +6,7 @@ import { baseLogger } from './shared/logger';
 import { Worker } from 'worker_threads';
 import { REFERRAL_MAP as REFERRAL_SYSTEM } from './xempire/constants';
 import { APP_CONFIG } from './config';
+import { shuffleArray } from './shared/utils';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,6 +40,8 @@ async function createUserThread(user: TAccountData) {
 
 async function start() {
     try {
+        shuffleArray(users);
+
         await Promise.allSettled(users.map((user) => createUserThread(user)));
 
         baseLogger.error('Выполнено: ', users.length);
