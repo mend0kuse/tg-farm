@@ -1010,21 +1010,25 @@ export class XEmpire {
                     continue;
                 }
 
-                if (info.isComplete && !name.includes('youtube')) {
+                if (name.includes('youtube')) {
+                    const answer = this.externalData?.youtube[info.url];
+
+                    if (this.externalData?.youtube && !answer) {
+                        await telegramApi.sendBotNotification(`[X-EMPIRE] Нужен код для видео ${info.url}`);
+                        this.logger.log('Успешно отправлено уведомление о новом видео');
+                    }
+
+                    if (answer) {
+                        await sleep(random(1, 2));
+                        await this.claimDailyQuestReward(name, answer);
+                    }
+
+                    continue;
+                }
+
+                if (info.isComplete) {
                     await sleep(random(1, 2));
                     await this.claimDailyQuestReward(name);
-                }
-
-                const answer = this.externalData?.youtube[info.url];
-
-                if (this.externalData?.youtube && !answer) {
-                    await telegramApi.sendBotNotification(`[X-EMPIRE] Нужен код для видео ${info.url}`);
-                    this.logger.log('Успешно отправлено уведомление о новом видео');
-                }
-
-                if (answer) {
-                    await sleep(random(1, 2));
-                    await this.claimDailyQuestReward(name, answer);
                 }
             }
         } catch (error) {
