@@ -10,6 +10,7 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import { TelegramClient, tl } from '@mtcute/node';
 import { toInputUser } from '@mtcute/node/utils.js';
 import { telegramApi } from '../shared/telegram/telegram-api';
+import { xEmpireDatabase } from './database';
 
 export class XEmpire {
     private API_URL = 'https://api.xempire.io';
@@ -91,7 +92,6 @@ export class XEmpire {
             cycleNumber++;
 
             const firstCycleDelayMinutes = random(1, 30);
-
             const delayInMinutes = this.level ? this.getDelayByLevel(this.level) : firstCycleDelayMinutes;
 
             this.logger.accentLog(
@@ -190,6 +190,15 @@ export class XEmpire {
                 } catch (error) {
                     this.logger.error('Ошибка выполнения промиса:', this.handleError(error));
                 }
+            }
+
+            try {
+                if (this.level) {
+                    const updated = await xEmpireDatabase.updateLevelByIndex(this.index, this.level);
+                    this.logger.log('Статус обновления: ', updated.acknowledged);
+                }
+            } catch (error) {
+                this.logger.error('Ошибка обновления базы данных', error);
             }
         }
     }

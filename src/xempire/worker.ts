@@ -2,10 +2,23 @@ import { TAccountData } from '../accounts-generator';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { parseSocks5Proxy, sleep, random } from '../shared/utils';
+import { xEmpireDatabase } from './database';
 import { XEmpire } from './xempire';
 
 export const runEmpireWorker = async (user: TAccountData & { refCode: string }) => {
     let cycle = 1;
+
+    try {
+        const savedAccount = await xEmpireDatabase.findByIndex(Number(user.index));
+        if (!savedAccount) {
+            await xEmpireDatabase.createAccount({ index: user.index, refCode: `hero${user.id}`, level: 1 });
+            baseLogger.log(`EMPIRE ${user.index} успешно добавлен в базу.`);
+        } else {
+            baseLogger.log(`EMPIRE ${user.index} загружен из базы.}`);
+        }
+    } catch (error) {
+        baseLogger.error(error);
+    }
 
     while (cycle < 6) {
         const { telegramClient } = await telegramApi.createClientBySession({

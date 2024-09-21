@@ -30,4 +30,8 @@ export const APP_CONFIG = {
     // ----  WALLETS ADDRESSES ----
 
     ETH_ADDRESS: process.env.ETH_ADDRESS ?? '',
+
+    // ---- MONGO ----
+
+    MONGO_DB_URL: process.env.MONGO_DB_URL ?? '',
 };
