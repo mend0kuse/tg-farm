@@ -11,7 +11,7 @@ import { tonUtility } from '../shared/ton/ton-utility';
 import { SendMode, fromNano, internal, toNano } from '@ton/core';
 
 export class Xrum {
-    private API_URL = 'https://api.hrum';
+    private API_URL = 'https://api.hrum.me';
     private account: TAccountData;
     private isAuthorized = false;
     private telegramClient: TelegramClient;
@@ -32,7 +32,7 @@ export class Xrum {
         telegramClient: TelegramClient;
     }) {
         this.logger = new BaseLogger(`HRUM_${account.index}`);
-        this.refCode = refCode;
+        // this.refCode = refCode;
         this.account = account;
         this.telegramClient = telegramClient;
 
@@ -72,12 +72,13 @@ export class Xrum {
             const delayInMinutes = random(1, 30);
 
             this.logger.accentLog(
-                'Начало прохода. \\/n',
-                this.fullProfile ? `Кол-во токенов ${this.money}. \\/n` : ' ',
+                'Начало прохода. \n',
+                this.fullProfile ? `Кол-во токенов ${this.money}. \n` : ' ',
                 this.fullProfile ? `Кол-во друзей ${this.fullProfile.friends.length}` : ''
             );
 
             await sleep(delayInMinutes * 60);
+            await sleep(3);
 
             let loginAttempts = 0;
             let loginError;
@@ -114,7 +115,7 @@ export class Xrum {
 
                     loginError = error;
                     this.logger.error('Неудачный логин, задержка...', this.handleError(error));
-                    await sleep(random(3, 5));
+                    await sleep(random(10, 15));
                     loginAttempts++;
 
                     continue loginLoop;
@@ -149,7 +150,11 @@ export class Xrum {
                     this.logger.error('Ошибка выполнения промиса:', this.handleError(error));
                 }
             }
+
+            break;
         }
+
+        this.logger.accentLog('Конец прохода');
     }
 
     async getWebAppDataUrl() {
@@ -339,13 +344,16 @@ export class Xrum {
     }
 
     async openCookie() {
-        this.logger.accentLog('Открываем печенье');
+        this.logger.log('Открываем печенье');
 
         try {
             const payload = { data: {} };
+
             await this.api.post('/user/cookie/open', payload, {
                 headers: this.createApiHeaders(payload),
             });
+
+            this.logger.log('Печенье открыто успешно');
         } catch (error) {
             this.logger.error('Ошибка при открытии печенья', this.handleError(error));
         }
