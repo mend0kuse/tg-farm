@@ -314,7 +314,6 @@ export class XEmpire {
     async completeImprovements() {
         let attempts = 0;
         const ignoredSkills: string[] = [];
-        this.logger.log('Старт апгрейдов..');
 
         while (true) {
             if (!this.isAuthorized) {
@@ -364,8 +363,9 @@ export class XEmpire {
      */
 
     async completeInvestments() {
-        this.logger.log('Старт инвестиций');
         if (!this.externalData || !this.externalData.investmentComboKeys) {
+            this.logger.log('Нет данных для инвестиций');
+
             return;
         }
 
@@ -403,8 +403,6 @@ export class XEmpire {
      */
 
     async completeMining() {
-        this.logger.log('Старт майнинга');
-
         let tappedToday = 0;
 
         while (true) {
@@ -473,8 +471,6 @@ export class XEmpire {
      */
 
     async completeBoxes() {
-        this.logger.log('Открытие коробок');
-
         try {
             const response = (
                 await this.api.post(
@@ -518,8 +514,6 @@ export class XEmpire {
      */
 
     async completeFakeCheckQuests() {
-        this.logger.log('Выполнение fakeCheck');
-
         const actualDbQuests = this.fullProfile.dbData.dbQuests.filter(
             (quest: any) => !this.fullProfile.quests.find((q: any) => q.key === quest.key)
         );
@@ -551,8 +545,6 @@ export class XEmpire {
     }
 
     async claimCompletedQuests() {
-        this.logger.log('Выполнение доступных заданий');
-
         for (const quest of this.fullProfile.quests) {
             if (!quest.isRewarded) {
                 await sleep(random(2, 4));
@@ -935,8 +927,6 @@ export class XEmpire {
      */
 
     async claimQuestReward(quest: string, code: string | null = null) {
-        this.logger.log(`Клейм награды за квест ${quest}`);
-
         try {
             const payload = { data: [quest, code] };
 
@@ -950,6 +940,7 @@ export class XEmpire {
                 throw new Error(response.error);
             }
 
+            this.logger.log(`Успешный клейм награды за квест ${quest}`);
             this.updateProfileHero(response.data.hero);
         } catch (error) {
             this.logger.error('Ошибка получения награды за квест!', this.handleError(error));
@@ -972,8 +963,6 @@ export class XEmpire {
      */
 
     async claimDailyQuestReward(quest: string, code: string | number | null = null) {
-        this.logger.log(`Клейм награды за ежедневный квест ${quest}`);
-
         try {
             const payload = { data: { quest, code } };
 
@@ -987,6 +976,7 @@ export class XEmpire {
                 throw new Error(response.error);
             }
 
+            this.logger.log(`Успешный клейм награды за ежедневный квест ${quest}`);
             this.fullProfile.hero = response.data.hero;
         } catch (error) {
             this.logger.error('Ошибка получения награды за ежедневный квест!', this.handleError(error));
@@ -998,8 +988,6 @@ export class XEmpire {
      */
 
     async completeDailyQuests() {
-        this.logger.log('Клейм награды за ежедневные квесты');
-
         try {
             const response = (
                 await this.api.post(
@@ -1043,8 +1031,6 @@ export class XEmpire {
     }
 
     async syncBalance() {
-        this.logger.log('Синхронизация');
-
         try {
             const response = await this.api.post(
                 '/hero/balance/sync',
@@ -1053,6 +1039,8 @@ export class XEmpire {
                     headers: this.createApiHeaders({}),
                 }
             );
+
+            this.logger.log('Синхронизовано');
 
             this.updateProfileHero(response.data.data.hero);
         } catch (error) {
