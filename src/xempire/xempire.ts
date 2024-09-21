@@ -1003,26 +1003,28 @@ export class XEmpire {
                 throw new Error(response.error);
             }
 
-            for (const [name, _info] of Object.entries(response)) {
+            for (const [name, _info] of Object.entries(response.data)) {
                 const info = _info as any;
 
-                if (info.isComplete && !info.isRewarded) {
+                if (info.isRewarded) {
+                    continue;
+                }
+
+                if (info.isComplete && !name.includes('youtube')) {
                     await sleep(random(1, 2));
                     await this.claimDailyQuestReward(name);
                 }
 
-                if (name.includes('youtube')) {
-                    const answer = this.externalData?.youtube[info.url];
+                const answer = this.externalData?.youtube[info.url];
 
-                    if (this.externalData?.youtube && !answer) {
-                        await telegramApi.sendBotNotification(`[X-EMPIRE] Нужен код для видео ${info.url}`);
-                        this.logger.log('Успешно отправлено уведомление о новом видео');
-                    }
+                if (this.externalData?.youtube && !answer) {
+                    await telegramApi.sendBotNotification(`[X-EMPIRE] Нужен код для видео ${info.url}`);
+                    this.logger.log('Успешно отправлено уведомление о новом видео');
+                }
 
-                    if (answer) {
-                        await sleep(random(1, 2));
-                        await this.claimDailyQuestReward(name, answer);
-                    }
+                if (answer) {
+                    await sleep(random(1, 2));
+                    await this.claimDailyQuestReward(name, answer);
                 }
             }
         } catch (error) {
