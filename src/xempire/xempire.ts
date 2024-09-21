@@ -92,14 +92,12 @@ export class XEmpire {
 
             const firstCycleDelayMinutes = random(1, 30);
 
-            const delayInMinutes = this.level
-                ? this.getDelayByLevel(this.level)
-                : firstCycleDelayMinutes;
+            const delayInMinutes = this.level ? this.getDelayByLevel(this.level) : firstCycleDelayMinutes;
 
             this.logger.accentLog(
                 `Задержка ${delayInMinutes} минут перед стартом прохода #${cycleNumber}...`,
                 cycleNumber > 1 ? `Текущий уровень ${this.level}. ` : ' ',
-                this.fullProfile ? `Кол-во друзей ${this.fullProfile.friends.length}` : '',
+                this.fullProfile ? `Кол-во друзей ${this.fullProfile.friends.length}` : ''
             );
 
             await sleep(delayInMinutes * 60);
@@ -114,12 +112,12 @@ export class XEmpire {
                     break loginLoop;
                 } catch (error) {
                     if (loginAttempts > 5) {
-                        this.logger.error(`5 Неудачных логинов, пропускаем круг...`);
+                        this.logger.error('5 Неудачных логинов, пропускаем круг...');
 
                         await telegramApi.sendBotNotification(
                             `[EMPIRE] 5 Неудачных логинов. Пользователь #${
                                 this.index
-                            }. Ошибка: ${this.handleError(loginError)}`,
+                            }. Ошибка: ${this.handleError(loginError)}`
                         );
 
                         continue mainLoop;
@@ -131,7 +129,7 @@ export class XEmpire {
 
                         if (this.continuousFloodErrors > 4) {
                             await telegramApi.sendBotNotification(
-                                `[EMPIRE]. Воркер ${this.index}. Ошибка по флуду #${this.continuousFloodErrors}. Выключение...`,
+                                `[EMPIRE]. Воркер ${this.index}. Ошибка по флуду #${this.continuousFloodErrors}. Выключение...`
                             );
 
                             return;
@@ -143,7 +141,7 @@ export class XEmpire {
                     }
 
                     loginError = error;
-                    this.logger.error(`Неудачный логин, задержка...`, this.handleError(error));
+                    this.logger.error('Неудачный логин, задержка...', this.handleError(error));
                     await sleep(random(3, 5));
                     loginAttempts++;
 
@@ -190,7 +188,7 @@ export class XEmpire {
                     await sleep(random(1, 2));
                     await this.syncBalance();
                 } catch (error) {
-                    this.logger.error(`Ошибка выполнения промиса:`, this.handleError(error));
+                    this.logger.error('Ошибка выполнения промиса:', this.handleError(error));
                 }
             }
         }
@@ -198,15 +196,15 @@ export class XEmpire {
 
     async connectWallet() {
         if (this.isWalletConnected) {
-            this.logger.log(`Кошелек уже подключен`);
+            this.logger.log('Кошелек уже подключен');
             return;
         } else {
             if (this.level < 3) {
-                this.logger.log(`Попытка подключить кошелек. Уровень меньше 3`);
+                this.logger.log('Попытка подключить кошелек. Уровень меньше 3');
                 return;
             }
 
-            this.logger.log(`Старт подключения кошелька`);
+            this.logger.log('Старт подключения кошелька');
         }
 
         try {
@@ -222,7 +220,7 @@ export class XEmpire {
 
             await this.completeQuest('ton_wallet_connect');
         } catch (error) {
-            this.logger.error(`Ошибка подключения кошелька:`, this.handleError(error));
+            this.logger.error('Ошибка подключения кошелька:', this.handleError(error));
         }
     }
 
@@ -246,7 +244,7 @@ export class XEmpire {
         const key = 'ton_wallet_transaction';
 
         if (!this.isWalletConnected) {
-            this.logger.log(`Кошелек не подключен, пропускаем отправку транзакции`);
+            this.logger.log('Кошелек не подключен, пропускаем отправку транзакции');
             return;
         }
 
@@ -259,12 +257,14 @@ export class XEmpire {
 
             try {
                 await this.claimQuestReward(key);
-            } catch {}
+            } catch {
+                //
+            }
 
-            this.logger.log(`Транзакция уже отправлена`);
+            this.logger.log('Транзакция уже отправлена');
             return;
-        } catch (error) {
-            this.logger.log(`Старт отправки транзакции`);
+        } catch {
+            this.logger.log('Старт отправки транзакции');
         }
 
         try {
@@ -272,7 +272,7 @@ export class XEmpire {
 
             this.logger.log(
                 `Адрес: ${await tonUtility.getWalletAddress(this.mnemonic)}
-                Баланс на кошельке: ${fromNano(balance)} ton`,
+                Баланс на кошельке: ${fromNano(balance)} ton`
             );
 
             if (balance <= toNano('0.5')) {
@@ -298,12 +298,12 @@ export class XEmpire {
                 ],
             });
 
-            this.logger.log(`Ожидание выполнения транзакции. 60-90 секунд...`);
+            this.logger.log('Ожидание выполнения транзакции. 60-90 секунд...');
             await sleep(random(60, 90));
 
             await this.completeQuest(key);
         } catch (error) {
-            this.logger.error(`Ошибка отправки транзакции:`, this.handleError(error));
+            this.logger.error('Ошибка отправки транзакции:', this.handleError(error));
         }
     }
 
@@ -314,7 +314,7 @@ export class XEmpire {
     async completeImprovements() {
         let attempts = 0;
         const ignoredSkills: string[] = [];
-        this.logger.log(`Старт апгрейдов..`);
+        this.logger.log('Старт апгрейдов..');
 
         while (true) {
             if (!this.isAuthorized) {
@@ -335,7 +335,7 @@ export class XEmpire {
 
             if (!bestSkill) {
                 if (attempts < 5) {
-                    this.logger.log(`Скиллы закончились. Немного подождем...`);
+                    this.logger.log('Скиллы закончились. Немного подождем...');
                     await sleep(random(30, 60));
                     await this.syncBalance();
                     attempts++;
@@ -343,7 +343,7 @@ export class XEmpire {
                     continue;
                 }
 
-                this.logger.log(`Завершение прокачки...`);
+                this.logger.log('Завершение прокачки...');
                 break;
             }
 
@@ -364,7 +364,7 @@ export class XEmpire {
      */
 
     async completeInvestments() {
-        this.logger.log(`Старт инвестиций`);
+        this.logger.log('Старт инвестиций');
         if (!this.externalData || !this.externalData.investmentComboKeys) {
             return;
         }
@@ -389,12 +389,12 @@ export class XEmpire {
                     this.calculateBet(
                         this.level,
                         this.fullProfile.hero.moneyPerHour ?? 0,
-                        this.fullProfile.hero.money ?? 0,
-                    ),
+                        this.fullProfile.hero.money ?? 0
+                    )
                 );
             }
         } catch (error) {
-            this.logger.error(`Ошибка инвестирования:`, this.handleError(error));
+            this.logger.error('Ошибка инвестирования:', this.handleError(error));
         }
     }
 
@@ -403,17 +403,17 @@ export class XEmpire {
      */
 
     async completeMining() {
-        this.logger.log(`Старт майнинга`);
+        this.logger.log('Старт майнинга');
 
         let tappedToday = 0;
 
         while (true) {
             if (this.fullProfile.questsDaily.tap.isComplete) {
-                this.logger.log(`Дневная норма выполнена`);
+                this.logger.log('Дневная норма выполнена');
                 break;
             }
 
-            let { moneyPerTap, energy, bonusChance, bonusMultiplier, recoveryPerSecond } =
+            const { moneyPerTap, energy, bonusChance, bonusMultiplier, recoveryPerSecond } =
                 this.fullProfile.hero.earns.task;
 
             this.logger.log(`Энергия: ${energy}`);
@@ -428,12 +428,7 @@ export class XEmpire {
             const tapsCount = tapsPerSecond * seconds;
 
             for (let i = 1; i <= tapsCount; i++) {
-                const tapPower = this.calculateTapPower(
-                    moneyPerTap,
-                    energy,
-                    bonusChance,
-                    bonusMultiplier,
-                );
+                const tapPower = this.calculateTapPower(moneyPerTap, energy, bonusChance, bonusMultiplier);
 
                 earnedMoney += tapPower;
             }
@@ -466,7 +461,7 @@ export class XEmpire {
                 this.updateProfileHero(response.data.hero);
                 tappedToday = response.data.tapped_today;
             } catch (error) {
-                this.logger.error(`Ошибка во время тапов:`, this.handleError(error));
+                this.logger.error('Ошибка во время тапов:', this.handleError(error));
             }
         }
 
@@ -478,7 +473,7 @@ export class XEmpire {
      */
 
     async completeBoxes() {
-        this.logger.log(`Открытие коробок`);
+        this.logger.log('Открытие коробок');
 
         try {
             const response = (
@@ -487,7 +482,7 @@ export class XEmpire {
                     {},
                     {
                         headers: this.createApiHeaders({}),
-                    },
+                    }
                 )
             ).data;
 
@@ -510,14 +505,11 @@ export class XEmpire {
 
                     this.logger.log(`Успешно открыто ${boxName}`);
                 } catch (error) {
-                    this.logger.error(
-                        `Ошибка открытия коробки ${boxName}`,
-                        this.handleError(error),
-                    );
+                    this.logger.error(`Ошибка открытия коробки ${boxName}`, this.handleError(error));
                 }
             }
         } catch (error) {
-            this.logger.error(`Ошибка при открытии коробок`, this.handleError(error));
+            this.logger.error('Ошибка при открытии коробок', this.handleError(error));
         }
     }
 
@@ -526,10 +518,10 @@ export class XEmpire {
      */
 
     async completeFakeCheckQuests() {
-        this.logger.log(`Выполнение fakeCheck`);
+        this.logger.log('Выполнение fakeCheck');
 
         const actualDbQuests = this.fullProfile.dbData.dbQuests.filter(
-            (quest: any) => !this.fullProfile.quests.find((q: any) => q.key === quest.key),
+            (quest: any) => !this.fullProfile.quests.find((q: any) => q.key === quest.key)
         );
 
         for (const { isArchived, checkType, key, requiredLevel, checkData } of actualDbQuests) {
@@ -544,7 +536,7 @@ export class XEmpire {
                     await telegramApi.joinChannel(this.telegramClient, checkData);
                     this.logger.log(`Вступление в канал ${checkData} успешно`);
                 } catch (error) {
-                    this.logger.error(`Ошибка при вступлении в канал: `, this.handleError(error));
+                    this.logger.error('Ошибка при вступлении в канал: ', this.handleError(error));
                 }
 
                 await sleep(random(5, 10));
@@ -559,7 +551,7 @@ export class XEmpire {
     }
 
     async claimCompletedQuests() {
-        this.logger.log(`Выполнение доступных заданий`);
+        this.logger.log('Выполнение доступных заданий');
 
         for (const quest of this.fullProfile.quests) {
             if (!quest.isRewarded) {
@@ -574,7 +566,7 @@ export class XEmpire {
      */
 
     async completeFriends() {
-        this.logger.log(`Старт сбора награды за друзей`);
+        this.logger.log('Старт сбора награды за друзей');
 
         for (const friend of this.fullProfile.friends) {
             if (friend.bonusToTake > 0) {
@@ -607,14 +599,12 @@ export class XEmpire {
      */
 
     async completeCheckIn() {
-        this.logger.log(`Клейм ежедневной награды`);
+        this.logger.log('Клейм ежедневной награды');
 
-        const day = Object.entries(this.fullProfile.dailyRewards).find(
-            ([, status]) => status == 'canTake',
-        )?.[0];
+        const day = Object.entries(this.fullProfile.dailyRewards).find(([, status]) => status == 'canTake')?.[0];
 
         if (!day) {
-            this.logger.log(`Ежедневная награда собрана`);
+            this.logger.log('Ежедневная награда собрана');
             return;
         }
 
@@ -668,7 +658,7 @@ export class XEmpire {
      */
 
     async completeRiddleAndRebus() {
-        this.logger.log(`Выполнение ребуса и загадки`);
+        this.logger.log('Выполнение ребуса и загадки');
 
         let riddleKey = '';
         let riddleAnswer = '';
@@ -677,7 +667,7 @@ export class XEmpire {
         let rebusAnswer = '';
         let rebusReqLevel = 0;
 
-        for (let quest of this.fullProfile.dbData.dbQuests) {
+        for (const quest of this.fullProfile.dbData.dbQuests) {
             const isRiddle = quest.key.includes('riddle');
             const isRebus = quest.key.includes('rebus');
             if (!isRiddle && !isRebus) {
@@ -686,21 +676,11 @@ export class XEmpire {
 
             const tz = 'Europe/Moscow';
             const today = moment().tz(tz);
-            const dateStart = quest.dateStart
-                ? moment(quest.dateStart.replace(' ', 'T') + 'Z').tz(tz)
-                : null;
+            const dateStart = quest.dateStart ? moment(quest.dateStart.replace(' ', 'T') + 'Z').tz(tz) : null;
 
-            const dateEnd = quest.dateEnd
-                ? moment(quest.dateEnd.replace(' ', 'T') + 'Z').tz(tz)
-                : null;
+            const dateEnd = quest.dateEnd ? moment(quest.dateEnd.replace(' ', 'T') + 'Z').tz(tz) : null;
 
-            if (
-                quest.isArchived ||
-                !dateEnd ||
-                !dateStart ||
-                dateEnd < today ||
-                dateStart > today
-            ) {
+            if (quest.isArchived || !dateEnd || !dateStart || dateEnd < today || dateStart > today) {
                 continue;
             }
 
@@ -722,8 +702,7 @@ export class XEmpire {
             !this.fullProfile.quests.find((quest: any) => quest.key.includes(riddleKey));
 
         const needRebus =
-            !!(rebusKey && rebusAnswer) &&
-            !this.fullProfile.quests.find((quest: any) => quest.key.includes(rebusKey));
+            !!(rebusKey && rebusAnswer) && !this.fullProfile.quests.find((quest: any) => quest.key.includes(rebusKey));
 
         try {
             if (needRiddle && this.level >= riddleReqLevel) {
@@ -745,7 +724,7 @@ export class XEmpire {
      */
 
     async claimOfflineBonus() {
-        this.logger.log(`Старт клейма офлайн бонуса.`);
+        this.logger.log('Старт клейма офлайн бонуса.');
 
         try {
             await this.api.post(
@@ -753,7 +732,7 @@ export class XEmpire {
                 {},
                 {
                     headers: this.createApiHeaders({}),
-                },
+                }
             );
         } catch (error) {
             this.logger.error('Ошибка офлайн бонуса', this.handleError(error));
@@ -791,7 +770,7 @@ export class XEmpire {
      */
 
     async login() {
-        this.logger.log(`Логин`);
+        this.logger.log('Логин');
 
         let url = '';
 
@@ -849,7 +828,7 @@ export class XEmpire {
      */
 
     async getProfile() {
-        this.logger.log(`Получения профиля`);
+        this.logger.log('Получения профиля');
 
         try {
             const dataAll = { data: {} };
@@ -864,13 +843,9 @@ export class XEmpire {
 
             await sleep(random(1, 2));
 
-            const responseAfter = await this.api.post<{ data: any }>(
-                '/user/data/after',
-                dataAfter,
-                {
-                    headers: this.createApiHeaders(dataAfter),
-                },
-            );
+            const responseAfter = await this.api.post<{ data: any }>('/user/data/after', dataAfter, {
+                headers: this.createApiHeaders(dataAfter),
+            });
 
             return {
                 ...responseAll.data.data,
@@ -887,7 +862,7 @@ export class XEmpire {
      */
 
     async getFunds() {
-        this.logger.log(`Получение инвестиций`);
+        this.logger.log('Получение инвестиций');
 
         try {
             const response = await this.api.post<{ data: any }>(
@@ -895,7 +870,7 @@ export class XEmpire {
                 {},
                 {
                     headers: this.createApiHeaders({}),
-                },
+                }
             );
 
             return response.data.data;
@@ -924,7 +899,7 @@ export class XEmpire {
                 throw new Error(response.error);
             }
 
-            this.logger.log(`Успешно инвестировали в фонд:`, fund);
+            this.logger.log('Успешно инвестировали в фонд:', fund);
 
             await sleep(random(1, 3));
             await this.syncBalance();
@@ -983,7 +958,7 @@ export class XEmpire {
 
     async getExternalData() {
         try {
-            this.logger.log(`Получение внешних данных...`);
+            this.logger.log('Получение внешних данных...');
             const { data } = await axios.get(APP_CONFIG.EXTERNAL_DATA_URL);
 
             this.externalData = data.data;
@@ -1014,10 +989,7 @@ export class XEmpire {
 
             this.fullProfile.hero = response.data.hero;
         } catch (error) {
-            this.logger.error(
-                'Ошибка получения награды за ежедневный квест!',
-                this.handleError(error),
-            );
+            this.logger.error('Ошибка получения награды за ежедневный квест!', this.handleError(error));
         }
     }
 
@@ -1026,7 +998,7 @@ export class XEmpire {
      */
 
     async completeDailyQuests() {
-        this.logger.log(`Клейм награды за ежедневные квесты`);
+        this.logger.log('Клейм награды за ежедневные квесты');
 
         try {
             const response = (
@@ -1035,7 +1007,7 @@ export class XEmpire {
                     {},
                     {
                         headers: this.createApiHeaders({}),
-                    },
+                    }
                 )
             ).data;
 
@@ -1055,9 +1027,7 @@ export class XEmpire {
                     const answer = this.externalData?.youtube[info.url];
 
                     if (this.externalData?.youtube && !answer) {
-                        await telegramApi.sendBotNotification(
-                            `[X-EMPIRE] Нужен код для видео ${info.url}`,
-                        );
+                        await telegramApi.sendBotNotification(`[X-EMPIRE] Нужен код для видео ${info.url}`);
                         this.logger.log('Успешно отправлено уведомление о новом видео');
                     }
 
@@ -1068,15 +1038,12 @@ export class XEmpire {
                 }
             }
         } catch (error) {
-            this.logger.error(
-                'Ошибка получения награды за ежедневные квесты!',
-                this.handleError(error),
-            );
+            this.logger.error('Ошибка получения награды за ежедневные квесты!', this.handleError(error));
         }
     }
 
     async syncBalance() {
-        this.logger.log(`Синхронизация`);
+        this.logger.log('Синхронизация');
 
         try {
             const response = await this.api.post(
@@ -1084,7 +1051,7 @@ export class XEmpire {
                 {},
                 {
                     headers: this.createApiHeaders({}),
-                },
+                }
             );
 
             this.updateProfileHero(response.data.data.hero);
@@ -1099,10 +1066,7 @@ export class XEmpire {
         const timeString = Math.floor(Date.now() / 1000).toString();
         const jsonString = JSON.stringify(data);
 
-        const hashString = crypto
-            .createHash('md5')
-            .update(`${timeString}_${jsonString}`, 'utf8')
-            .digest('hex');
+        const hashString = crypto.createHash('md5').update(`${timeString}_${jsonString}`, 'utf8').digest('hex');
 
         return {
             'Api-Time': timeString,
@@ -1113,7 +1077,7 @@ export class XEmpire {
     get level() {
         try {
             return this.fullProfile.hero.level;
-        } catch (error) {
+        } catch {
             return null;
         }
     }
@@ -1144,9 +1108,7 @@ export class XEmpire {
 
     get myLevelInfo() {
         try {
-            return this.fullProfile.dbData.dbLevels.find(
-                (levelInfo: any) => levelInfo.level === this.level,
-            );
+            return this.fullProfile.dbData.dbLevels.find((levelInfo: any) => levelInfo.level === this.level);
         } catch {
             return null;
         }
@@ -1327,7 +1289,7 @@ export class XEmpire {
         balance: any;
         mode: TImproveMode;
     }) {
-        let possibleSkills = [];
+        const possibleSkills = [];
         for (const skill of allSKills) {
             if ((ignoredSkills ?? []).includes(skill.key)) continue;
             if (skill.profitBasic === 0) continue;
@@ -1376,7 +1338,7 @@ export class XEmpire {
         friends: any;
     }) {
         let isPossible = false;
-        let currentSkill = mySkills[skill.key];
+        const currentSkill = mySkills[skill.key];
         let skillPrice;
         let skillProfit;
 
@@ -1384,8 +1346,7 @@ export class XEmpire {
             if (skill.maxLevel <= currentSkill.level) return null;
 
             if (typeof currentSkill.finishUpgradeDate === 'string') {
-                currentSkill.finishUpgradeDate =
-                    new Date(currentSkill.finishUpgradeDate).getTime() / 1000;
+                currentSkill.finishUpgradeDate = new Date(currentSkill.finishUpgradeDate).getTime() / 1000;
             }
             if (
                 typeof currentSkill.finishUpgradeDate === 'number' &&
@@ -1424,16 +1385,11 @@ export class XEmpire {
 
             if (!matchedSkillLimit) {
                 isPossible = true;
-            } else if (
-                matchedSkillLimit.requiredHeroLevel <= level &&
-                matchedSkillLimit.requiredFriends <= friends
-            ) {
+            } else if (matchedSkillLimit.requiredHeroLevel <= level && matchedSkillLimit.requiredFriends <= friends) {
                 if (!matchedSkillLimit.requiredSkills) {
                     isPossible = true;
                 } else {
-                    for (const [reqSkill, reqLevel] of Object.entries(
-                        matchedSkillLimit.requiredSkills,
-                    )) {
+                    for (const [reqSkill, reqLevel] of Object.entries(matchedSkillLimit.requiredSkills)) {
                         if (mySkills[reqSkill]?.level >= (reqLevel as number)) {
                             isPossible = true;
                         } else {
@@ -1463,39 +1419,26 @@ export class XEmpire {
         let result;
         if (Math.abs(value) >= 1e3 && Math.abs(value) < 1e6) {
             result = value / 1e3;
-            return `${
-                roundValue || result % 1 === 0 ? Math.round(result) : Math.floor(result * 10) / 10
-            }K`;
+            return `${roundValue || result % 1 === 0 ? Math.round(result) : Math.floor(result * 10) / 10}K`;
         }
 
         if (Math.abs(value) >= 1e6 && Math.abs(value) < 1e9) {
             result = value / 1e6;
-            return `${
-                roundValue || result % 1 === 0 ? Math.round(result) : Math.floor(result * 10) / 10
-            }M`;
+            return `${roundValue || result % 1 === 0 ? Math.round(result) : Math.floor(result * 10) / 10}M`;
         }
 
         if (Math.abs(value) >= 1e9 && Math.abs(value) < 1e12) {
             result = value / 1e9;
-            return `${
-                roundValue || result % 1 === 0 ? Math.round(result) : Math.floor(result * 10) / 10
-            }B`;
+            return `${roundValue || result % 1 === 0 ? Math.round(result) : Math.floor(result * 10) / 10}B`;
         }
 
         if (Math.abs(value) >= 1e12) {
             result = value / 1e12;
-            return `${
-                roundValue || result % 1 === 0 ? Math.round(result) : Math.floor(result * 10) / 10
-            }T`;
+            return `${roundValue || result % 1 === 0 ? Math.round(result) : Math.floor(result * 10) / 10}T`;
         }
     }
 
-    calculateTapPower(
-        perTap: number,
-        energy: number,
-        bonusChance: number,
-        bonusMultiplier: number,
-    ) {
+    calculateTapPower(perTap: number, energy: number, bonusChance: number, bonusMultiplier: number) {
         if (perTap > energy) {
             return 0;
         }
@@ -1559,7 +1502,7 @@ export class XEmpire {
         if (currentMaxBet < balance) {
             availBet = currentMaxBet;
         } else {
-            let currentMinBet = minBet();
+            const currentMinBet = minBet();
             while (currentMaxBet > balance && currentMaxBet - currentMinBet >= currentMinBet) {
                 currentMaxBet -= currentMinBet;
             }

@@ -72,9 +72,9 @@ export class Xrum {
             const delayInMinutes = random(1, 30);
 
             this.logger.accentLog(
-                `Начало прохода. \/n`,
-                this.fullProfile ? `Кол-во токенов ${this.money}. \/n` : ' ',
-                this.fullProfile ? `Кол-во друзей ${this.fullProfile.friends.length}` : '',
+                'Начало прохода. \\/n',
+                this.fullProfile ? `Кол-во токенов ${this.money}. \\/n` : ' ',
+                this.fullProfile ? `Кол-во друзей ${this.fullProfile.friends.length}` : ''
             );
 
             await sleep(delayInMinutes * 60);
@@ -88,12 +88,12 @@ export class Xrum {
                     break loginLoop;
                 } catch (error) {
                     if (loginAttempts > 5) {
-                        this.logger.error(`5 Неудачных логинов, пропускаем круг...`);
+                        this.logger.error('5 Неудачных логинов, пропускаем круг...');
 
                         await telegramApi.sendBotNotification(
                             `[HRUM] 5 Неудачных логинов. Пользователь #${
                                 this.account.index
-                            }. Ошибка: ${this.handleError(loginError)}`,
+                            }. Ошибка: ${this.handleError(loginError)}`
                         );
 
                         continue mainLoop;
@@ -105,7 +105,7 @@ export class Xrum {
 
                         if (this.continuousFloodErrors > 4) {
                             await telegramApi.sendBotNotification(
-                                `[HRUM]. Воркер ${this.account.index}. Ошибка по флуду #${this.continuousFloodErrors}. Выключение...`,
+                                `[HRUM]. Воркер ${this.account.index}. Ошибка по флуду #${this.continuousFloodErrors}. Выключение...`
                             );
 
                             return;
@@ -117,7 +117,7 @@ export class Xrum {
                     }
 
                     loginError = error;
-                    this.logger.error(`Неудачный логин, задержка...`, this.handleError(error));
+                    this.logger.error('Неудачный логин, задержка...', this.handleError(error));
                     await sleep(random(3, 5));
                     loginAttempts++;
 
@@ -128,7 +128,7 @@ export class Xrum {
             try {
                 await this.getProfile();
             } catch (error) {
-                this.logger.error(`Ошибка получения профиля: `, this.handleError(error));
+                this.logger.error('Ошибка получения профиля: ', this.handleError(error));
                 continue mainLoop;
             }
 
@@ -136,12 +136,7 @@ export class Xrum {
 
             await sleep(random(5, 10));
 
-            const actions = [
-                this.openCookie,
-                this.completeAvailableQuests,
-                this.connectWallet,
-                this.sendTransaction,
-            ];
+            const actions = [this.openCookie, this.completeAvailableQuests, this.connectWallet, this.sendTransaction];
 
             shuffleArray(actions);
 
@@ -155,7 +150,7 @@ export class Xrum {
                     await promise.call(this);
                     await sleep(random(1, 2));
                 } catch (error) {
-                    this.logger.error(`Ошибка выполнения промиса:`, this.handleError(error));
+                    this.logger.error('Ошибка выполнения промиса:', this.handleError(error));
                 }
             }
 
@@ -192,7 +187,7 @@ export class Xrum {
     }
 
     async login() {
-        this.logger.log(`Логин`);
+        this.logger.log('Логин');
 
         let url = '';
 
@@ -246,7 +241,7 @@ export class Xrum {
     }
 
     async getProfile() {
-        this.logger.log(`Получения профиля`);
+        this.logger.log('Получения профиля');
 
         try {
             const dataAll = { data: {} };
@@ -261,13 +256,9 @@ export class Xrum {
 
             await sleep(random(0, 1));
 
-            const responseAfter = await this.api.post<{ data: any }>(
-                '/user/data/after',
-                dataAfter,
-                {
-                    headers: this.createApiHeaders(dataAfter),
-                },
-            );
+            const responseAfter = await this.api.post<{ data: any }>('/user/data/after', dataAfter, {
+                headers: this.createApiHeaders(dataAfter),
+            });
 
             this.fullProfile = {
                 ...responseAll.data.data,
@@ -280,13 +271,13 @@ export class Xrum {
     }
 
     async completeAvailableQuests() {
-        this.logger.log(`Выполнение квестов`);
+        this.logger.log('Выполнение квестов');
 
         const actualDbQuests = this.fullProfile.dbData.dbQuests.filter(
-            (quest: any) => !this.fullProfile.quests.find((q: any) => q.key === quest.key),
+            (quest: any) => !this.fullProfile.quests.find((q: any) => q.key === quest.key)
         );
 
-        for (const { isArchived, checkType, key, requiredLevel, checkData } of actualDbQuests) {
+        for (const { isArchived, checkType, key, checkData } of actualDbQuests) {
             if (isArchived) {
                 continue;
             }
@@ -298,7 +289,7 @@ export class Xrum {
                     await telegramApi.joinChannel(this.telegramClient, checkData);
                     this.logger.log(`Вступление в канал ${checkData} успешно`);
                 } catch (error) {
-                    this.logger.error(`Ошибка при вступлении в канал: `, this.handleError(error));
+                    this.logger.error('Ошибка при вступлении в канал: ', this.handleError(error));
                 }
 
                 await sleep(random(5, 10));
@@ -370,10 +361,10 @@ export class Xrum {
 
     async connectWallet() {
         if (this.isWalletConnected) {
-            this.logger.log(`Кошелек уже подключен`);
+            this.logger.log('Кошелек уже подключен');
             return;
         } else {
-            this.logger.log(`Старт подключения кошелька`);
+            this.logger.log('Старт подключения кошелька');
         }
 
         try {
@@ -389,7 +380,7 @@ export class Xrum {
 
             await this.checkAndClaimQuest('ton_wallet_connect');
         } catch (error) {
-            this.logger.error(`Ошибка подключения кошелька:`, this.handleError(error));
+            this.logger.error('Ошибка подключения кошелька:', this.handleError(error));
         }
     }
 
@@ -397,7 +388,7 @@ export class Xrum {
         const key = 'ton_wallet_transaction';
 
         if (!this.isWalletConnected) {
-            this.logger.log(`Кошелек не подключен, пропускаем отправку транзакции`);
+            this.logger.log('Кошелек не подключен, пропускаем отправку транзакции');
             return;
         }
 
@@ -408,10 +399,10 @@ export class Xrum {
         try {
             await this.checkAndClaimQuest(key);
 
-            this.logger.log(`Транзакция уже отправлена`);
+            this.logger.log('Транзакция уже отправлена');
             return;
-        } catch (error) {
-            this.logger.log(`Старт отправки транзакции`);
+        } catch {
+            this.logger.log('Старт отправки транзакции');
         }
 
         try {
@@ -419,7 +410,7 @@ export class Xrum {
 
             this.logger.log(
                 `Адрес: ${await tonUtility.getWalletAddress(this.mnemonic)}
-                Баланс на кошельке: ${fromNano(balance)} ton`,
+                Баланс на кошельке: ${fromNano(balance)} ton`
             );
 
             if (balance <= toNano('0.5')) {
@@ -445,12 +436,12 @@ export class Xrum {
                 ],
             });
 
-            this.logger.log(`Ожидание выполнения транзакции. 60-90 секунд...`);
+            this.logger.log('Ожидание выполнения транзакции. 60-90 секунд...');
             await sleep(random(60, 90));
 
             await this.checkAndClaimQuest(key);
         } catch (error) {
-            this.logger.error(`Ошибка отправки транзакции:`, this.handleError(error));
+            this.logger.error('Ошибка отправки транзакции:', this.handleError(error));
         }
     }
 
@@ -459,7 +450,7 @@ export class Xrum {
     get money() {
         try {
             return this.fullProfile?.hero.token;
-        } catch (error) {
+        } catch {
             return null;
         }
     }
@@ -472,10 +463,7 @@ export class Xrum {
         const timeString = Math.floor(Date.now() / 1000).toString();
         const jsonString = JSON.stringify(data);
 
-        const hashString = crypto
-            .createHash('md5')
-            .update(`${timeString}_${jsonString}`, 'utf8')
-            .digest('hex');
+        const hashString = crypto.createHash('md5').update(`${timeString}_${jsonString}`, 'utf8').digest('hex');
 
         return {
             'Api-Time': timeString,
@@ -514,7 +502,7 @@ export class Xrum {
     get mnemonic() {
         try {
             return this.account.mnemonicTon.split(' ');
-        } catch (error) {
+        } catch {
             return [];
         }
     }
@@ -570,13 +558,13 @@ export class Xrum {
 
         if (currentUTCHour < targetHour) {
             const nextTargetTimeToday = new Date(
-                Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), targetHour),
+                Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), targetHour)
             );
 
             ms = nextTargetTimeToday.getTime() - now.getTime();
         } else {
             const nextTargetTimeTomorrow = new Date(
-                Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, targetHour),
+                Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, targetHour)
             );
 
             ms = nextTargetTimeTomorrow.getTime() - now.getTime();

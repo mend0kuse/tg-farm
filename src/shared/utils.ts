@@ -22,9 +22,9 @@ export const sleep = (seconds: number) => {
 };
 
 export const shuffleArray = (array: any[]) => {
-    for (var i = array.length - 1; i >= 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = array[i];
+    for (let i = array.length - 1; i >= 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = array[i];
         array[i] = array[j];
         array[j] = temp;
     }
@@ -43,7 +43,7 @@ export const parseSocks5Proxy = (url: string): TSocks5Proxy | null => {
     const match = url.match(regex);
 
     if (match) {
-        const [_, login, password, ip, port] = match;
+        const [, login, password, ip, port] = match;
         return {
             type: 'socks5',
             login,

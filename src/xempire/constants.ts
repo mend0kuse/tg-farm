@@ -1,23 +1,23 @@
-const FUNDS_MAP = {
-    Бриллианты: 'diamonds',
-    'Нефтяные компании': 'oil_companies',
-    'Часы ограниченной серии': 'limited_edition_watches',
-    'Дорогое вино': 'expensive_wine',
-    'Классические автомобили': 'classic_cars',
-    'Фармацевтические компании': 'pharmaceutical_companies',
-    'Аренда автомобилей в Дубае': 'car_rentals_in_dubai',
-    'Мемные футболки': 'meme_tshirts',
-    'Недвижимость в Нигерии': 'real_estate_in_nigeria',
-    'Разведение хомяков': 'hamster_breeding',
-    'Искусственный интеллект': 'artificial_intelligence',
-    'Производители электрических транспортных средств': 'electric_vehicle_manufacturers',
-    'Инструменты для добычи золота': 'gold_mining_tools',
-    'Разработка игр': 'game_development',
-    'Космические компании': 'space_companies',
-    'Разведение единорогов': 'unicorn_breeding',
-    'Модели OnlyFans': 'onlyfans_models',
-    'Проекты блокчейна': 'blockchain_projects',
-};
+// const FUNDS_MAP = {
+//     Бриллианты: 'diamonds',
+//     'Нефтяные компании': 'oil_companies',
+//     'Часы ограниченной серии': 'limited_edition_watches',
+//     'Дорогое вино': 'expensive_wine',
+//     'Классические автомобили': 'classic_cars',
+//     'Фармацевтические компании': 'pharmaceutical_companies',
+//     'Аренда автомобилей в Дубае': 'car_rentals_in_dubai',
+//     'Мемные футболки': 'meme_tshirts',
+//     'Недвижимость в Нигерии': 'real_estate_in_nigeria',
+//     'Разведение хомяков': 'hamster_breeding',
+//     'Искусственный интеллект': 'artificial_intelligence',
+//     'Производители электрических транспортных средств': 'electric_vehicle_manufacturers',
+//     'Инструменты для добычи золота': 'gold_mining_tools',
+//     'Разработка игр': 'game_development',
+//     'Космические компании': 'space_companies',
+//     'Разведение единорогов': 'unicorn_breeding',
+//     'Модели OnlyFans': 'onlyfans_models',
+//     'Проекты блокчейна': 'blockchain_projects',
+// };
 
 export const REFERRAL_MAP: Record<number, number> = {
     8: 1,
@@ -67,4 +67,3 @@ export const REFERRAL_MAP: Record<number, number> = {
     52: 39,
     53: 40,
 };
-

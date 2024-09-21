@@ -1,14 +1,7 @@
 import { Api, TonApiClient } from '@ton-api/client';
 import { ContractAdapter } from '@ton-api/ton-adapter';
 import { mnemonicNew, mnemonicToPrivateKey } from '@ton/crypto';
-import {
-    MessageRelaxed,
-    SendMode,
-    StateInit,
-    WalletContractV5R1,
-    beginCell,
-    storeStateInit,
-} from '@ton/ton';
+import { MessageRelaxed, SendMode, StateInit, WalletContractV5R1, beginCell, storeStateInit } from '@ton/ton';
 import { APP_CONFIG } from '../../config';
 import { WalletV5R1SendArgs } from '@ton/ton/dist/wallets/WalletContractV5R1';
 
@@ -22,7 +15,7 @@ export class TonUtility {
         new TonApiClient({
             baseUrl: 'https://tonapi.io',
             apiKey: APP_CONFIG.TON_API_KEY,
-        }),
+        })
     );
 
     async createWallet() {
@@ -87,7 +80,8 @@ export class TonUtility {
 
         const contract = adapter.open(wallet);
 
-        // @ts-ignore
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
         return contract.sendTransfer({
             ...options,
             secretKey: keyPair.secretKey,

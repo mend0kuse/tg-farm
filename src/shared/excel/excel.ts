@@ -13,9 +13,7 @@ export class ExcelUtility {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
 
-        const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as Array<
-            Array<string | number>
-        >;
+        const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as Array<Array<string | number>>;
 
         const headers = jsonData[0] as string[];
         if (!headers) {

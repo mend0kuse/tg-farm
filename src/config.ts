@@ -24,10 +24,8 @@ export const APP_CONFIG = {
     // ---- BYBIT ----
 
     BYBIT_IS_MAINNET,
-    BYBIT_KEY: BYBIT_IS_MAINNET ? process.env.BYBIT_KEY ?? '' : process.env.BYBIT_KEY_TESTNET ?? '',
-    BYBIT_SECRET: BYBIT_IS_MAINNET
-        ? process.env.BYBIT_SECRET ?? ''
-        : process.env.BYBIT_SECRET_TESTNET ?? '',
+    BYBIT_KEY: BYBIT_IS_MAINNET ? (process.env.BYBIT_KEY ?? '') : (process.env.BYBIT_KEY_TESTNET ?? ''),
+    BYBIT_SECRET: BYBIT_IS_MAINNET ? (process.env.BYBIT_SECRET ?? '') : (process.env.BYBIT_SECRET_TESTNET ?? ''),
 
     // ----  WALLETS ADDRESSES ----
 

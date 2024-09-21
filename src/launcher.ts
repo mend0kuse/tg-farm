@@ -1,6 +1,4 @@
 import { excelUtility } from './shared/excel/excel';
-import xlsx from 'xlsx';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { TAccountData } from './accounts-generator';
@@ -16,8 +14,7 @@ const users = excelUtility.getAccounts(path.join(__dirname, '..', '..', 'account
 
 const getRefByIndex = (index: number) => {
     const inv = REFERRAL_SYSTEM[index];
-    const res =
-        inv === 1 ? APP_CONFIG.MASTER_USER_ID : users.find((user) => user.index === index)?.id;
+    const res = inv === 1 ? APP_CONFIG.MASTER_USER_ID : users.find((user) => user.index === index)?.id;
     return res ? `hero${res}` : null;
 };
 

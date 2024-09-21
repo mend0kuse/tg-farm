@@ -1,12 +1,7 @@
-import {
-    GetAssetInfoParamsV5,
-    GetWalletBalanceParamsV5,
-    RestClientV5,
-    WithdrawParamsV5,
-} from 'bybit-api';
-import { APP_CONFIG } from '../config';
-import { baseLogger } from '../shared/logger';
-import { CHAIN, TOKEN } from '../shared/tokens';
+import { GetAssetInfoParamsV5, GetWalletBalanceParamsV5, RestClientV5, WithdrawParamsV5 } from 'bybit-api';
+import { APP_CONFIG } from '../../config';
+import { baseLogger } from '../logger';
+import { TOKEN, CHAIN } from '../tokens';
 
 export class ByBitApi {
     private client = new RestClientV5({
@@ -43,10 +38,7 @@ export class ByBitApi {
                     throw new Error(response.retMsg);
                 }
 
-                baseLogger.log(
-                    `Результат отправки ${token} на адрес ${address}: `,
-                    response.retMsg,
-                );
+                baseLogger.log(`Результат отправки ${token} на адрес ${address}: `, response.retMsg);
             } catch (error) {
                 baseLogger.error(`Ошибка отправки ${token} на адрес ${address}`, error);
             }
@@ -62,9 +54,9 @@ export class ByBitApi {
     }
 
     async getAllCoinsBalance() {
-        return (
-            await this.client.getAllCoinsBalance({ accountType: 'FUND' })
-        ).result.balance.filter((item) => Number(item.walletBalance) > 0);
+        return (await this.client.getAllCoinsBalance({ accountType: 'FUND' })).result.balance.filter(
+            (item) => Number(item.walletBalance) > 0
+        );
     }
 
     async getAccountInfo() {

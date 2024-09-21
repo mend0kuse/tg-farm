@@ -8,13 +8,10 @@ import { TSocks5Proxy, terminalPrompt } from '../utils';
 export class TelegramApi {
     async sendBotNotification(message: string, chatId = APP_CONFIG.MASTER_USER_ID) {
         try {
-            await axios.post(
-                `https://api.telegram.org/bot${APP_CONFIG.NOTIFICATION_BOT_TOKEN}/sendMessage`,
-                {
-                    chat_id: chatId,
-                    text: message,
-                },
-            );
+            await axios.post(`https://api.telegram.org/bot${APP_CONFIG.NOTIFICATION_BOT_TOKEN}/sendMessage`, {
+                chat_id: chatId,
+                text: message,
+            });
         } catch (error) {
             baseLogger.error('Error sending Telegram notification:', error);
         }
@@ -33,11 +30,7 @@ export class TelegramApi {
         return new URLSearchParams(new URL(url).hash.substring(1)).get('tgWebAppData') ?? '';
     }
 
-    async createClientBySession(args?: {
-        session?: string;
-        sessionName?: string;
-        proxy?: TSocks5Proxy | null;
-    }) {
+    async createClientBySession(args?: { session?: string; sessionName?: string; proxy?: TSocks5Proxy | null }) {
         const { proxy, sessionName = '' } = args || {};
 
         const tg = new TelegramClient({

@@ -7,7 +7,11 @@
         "make": "npx tsx ./src/accounts-generator.ts",
         "launch:empire": "npx tsx ./src/xempire/launcher.ts",
         "build": "tsc",
-        "start": "node --experimental-specifier-resolution=node dist/xempire/launcher.js"
+        "start": "node --experimental-specifier-resolution=node dist/xempire/launcher.js",
+        "lint": "eslint 'src/**/*.{ts,tsx,js}'",
+        "lint:fix": "eslint 'src/**/*.{ts,tsx,js}' --fix",
+        "format": "prettier --write 'src/**/*.{ts,tsx,js,json,css,md}'",
+        "format:check": "prettier --check 'src/**/*.{ts,tsx,js,json,css,md}'"
     },
     "keywords": [],
     "author": "",
@@ -33,6 +37,12 @@
     "devDependencies": {
         "@types/node": "^22.5.4",
         "@types/xlsx": "^0.0.36",
+        "@typescript-eslint/eslint-plugin": "^8.6.0",
+        "@typescript-eslint/parser": "^8.6.0",
+        "eslint": "^9.11.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.2.1",
+        "prettier": "^3.3.3",
         "tsx": "^4.19.1",
         "typescript": "^5.6.2"
     }
