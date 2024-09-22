@@ -5,3 +5,6 @@ accounts.xlsx
 /sessions
 proxies.txt
 dist
+roadmap.txt
+test.ts
+*.bash
