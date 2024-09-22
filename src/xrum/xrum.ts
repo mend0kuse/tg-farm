@@ -9,6 +9,8 @@ import crypto from 'crypto';
 import { random, shuffleArray } from '../shared/utils';
 import { tonUtility } from '../shared/ton/ton-utility';
 import { SendMode, fromNano, internal, toNano } from '@ton/core';
+import { xrumDatabase } from './database';
+import { APP_CONFIG } from '../config';
 
 export class Xrum {
     private API_URL = 'https://api.hrum.me';
@@ -17,8 +19,9 @@ export class Xrum {
     private telegramClient: TelegramClient;
     private fullProfile: any = null;
     private peer: null | tl.TypeInputPeer = null;
-    private refCode = 'ref7311867778';
+    private refCode = `ref${APP_CONFIG.MASTER_USER_ID}`;
     private logger;
+    private isCreated: boolean = false;
     private continuousFloodErrors = 0;
     private api: AxiosInstance;
 
@@ -26,13 +29,16 @@ export class Xrum {
         account,
         telegramClient,
         refCode,
+        isCreated,
     }: {
+        isCreated: boolean;
         refCode: string;
         account: TAccountData;
         telegramClient: TelegramClient;
     }) {
+        this.isCreated = isCreated;
         this.logger = new BaseLogger(`HRUM_${account.index}`);
-        // this.refCode = refCode;
+        this.refCode = refCode;
         this.account = account;
         this.telegramClient = telegramClient;
 
@@ -81,7 +87,6 @@ export class Xrum {
             await sleep(3);
 
             let loginAttempts = 0;
-            let loginError;
 
             loginLoop: while (true) {
                 try {
@@ -89,23 +94,12 @@ export class Xrum {
                     break loginLoop;
                 } catch (error) {
                     if (loginAttempts > 5) {
-                        this.logger.error('5 Неудачных логинов, пропускаем круг...');
-
-                        await telegramApi.sendBotNotification(
-                            `[HRUM] 5 Неудачных логинов. Пользователь #${
-                                this.account.index
-                            }. Ошибка: ${this.handleError(loginError)}`
-                        );
-
-                        continue mainLoop;
+                        throw new Error('5 Неудачных логинов');
                     }
 
                     if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
-                        await this.telegramClient.close();
-                        await this.telegramClient.start();
-
                         if (this.continuousFloodErrors > 4) {
-                            throw new Error('CONTINUOS FLOOD ERROR');
+                            throw new Error('FLOOD');
                         }
 
                         this.continuousFloodErrors++;
@@ -113,7 +107,6 @@ export class Xrum {
                         continue mainLoop;
                     }
 
-                    loginError = error;
                     this.logger.error('Неудачный логин, задержка...', this.handleError(error));
                     await sleep(random(10, 15));
                     loginAttempts++;
@@ -130,6 +123,16 @@ export class Xrum {
             }
 
             if (!this.fullProfile) continue mainLoop;
+
+            if (!this.isCreated) {
+                try {
+                    await xrumDatabase.createAccount({ index: this.account.index, tokens: 0, tgId: this.account.id });
+                    this.isCreated = true;
+                    this.logger.error('Успешно добавлен в базу');
+                } catch (error) {
+                    this.logger.error('Ошибка добавления в базу', error);
+                }
+            }
 
             await sleep(random(5, 10));
 
@@ -151,15 +154,22 @@ export class Xrum {
                 }
             }
 
-            break;
-        }
+            try {
+                if (this.money) {
+                    await xrumDatabase.updateTokensByIndex(this.account.index, this.money);
+                }
+            } catch (error) {
+                this.logger.error('Ошибка обновления токенов:', error);
+            }
 
-        this.logger.accentLog('Конец прохода');
+            this.logger.accentLog('Конец прохода');
+            return;
+        }
     }
 
     async getWebAppDataUrl() {
         if (!this.peer) {
-            this.peer = await this.telegramClient.resolvePeer('hrummebot');
+            this.peer = await this.telegramClient.resolvePeer(7041524291);
         }
 
         try {

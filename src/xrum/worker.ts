@@ -1,13 +1,36 @@
 import { TAccountData } from '../accounts-generator';
+import { REFERRAL_MAP } from '../constants';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { parseSocks5Proxy, random, sleep } from '../shared/utils';
+import { xrumDatabase } from './database';
 import { Xrum } from './xrum';
 
-export const runHrumWorker = async (user: TAccountData & { refCode: string }) => {
+export const runHrumWorker = async (user: TAccountData) => {
     let errors = 0;
 
+    const refererIndex = REFERRAL_MAP[user.index];
+    let refCode = 'ref';
+    let isCreated = false;
+
     while (errors < 5) {
+        while (true) {
+            const myAccount = await xrumDatabase.findByIndex(user.index);
+            if (myAccount) {
+                isCreated = true;
+                break;
+            }
+
+            const refererAccount = await xrumDatabase.findByIndex(refererIndex);
+            if (refererAccount) {
+                refCode += refererAccount.tgId;
+                break;
+            }
+
+            baseLogger.accentLog(`[XRUM_${user.index}] В базе не найден аккаунт referer. Задержка 10 минут...`);
+            await sleep(60 * 10);
+        }
+
         const { telegramClient } = await telegramApi.createClientBySession({
             session: user.session,
             proxy: parseSocks5Proxy(user.proxy),
@@ -18,7 +41,8 @@ export const runHrumWorker = async (user: TAccountData & { refCode: string }) =>
             const hrum = new Xrum({
                 telegramClient,
                 account: user,
-                refCode: user.refCode,
+                refCode,
+                isCreated,
             });
 
             await hrum.start();
@@ -28,8 +52,8 @@ export const runHrumWorker = async (user: TAccountData & { refCode: string }) =>
             errors++;
             baseLogger.error('[HRUM] WORKER ERROR', error);
 
-            await telegramApi.sendBotNotification(`[HRUM]. Воркер ${user.index}. Ошибка по флуду #${errors}.`);
-            await sleep(random(30, 60));
+            await telegramApi.sendBotNotification(`[HRUM]. Воркер ${user.index}. Ошибка #${errors}. ${error}`);
+            await sleep(random(120, 180));
         }
     }
 };
