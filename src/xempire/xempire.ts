@@ -120,7 +120,7 @@ export class XEmpire {
                             }. Ошибка: ${this.handleError(loginError)}`
                         );
 
-                        continue mainLoop;
+                        return;
                     }
 
                     if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
