@@ -16,7 +16,7 @@ export class XrumDatabase {
     }
 
     findAll() {
-        return this.accountModel.find();
+        return this.accountModel.find({});
     }
 
     private accountModel = mongoose.model(

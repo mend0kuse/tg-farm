@@ -41,6 +41,6 @@ export const REFERRAL_MAP: Record<number, number> = {
     52: 48,
     53: 49,
     54: 50,
-    55: 51,
-    56: 52,
+    55: 1,
+    56: 2,
 };

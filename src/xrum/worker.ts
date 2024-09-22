@@ -10,7 +10,7 @@ export const runHrumWorker = async (user: TAccountData) => {
     let errors = 0;
 
     const refererIndex = REFERRAL_MAP[user.index];
-    let refCode = 'ref';
+    let refCode = '';
     let isCreated = false;
 
     while (errors < 5) {
@@ -23,12 +23,12 @@ export const runHrumWorker = async (user: TAccountData) => {
 
             const refererAccount = await xrumDatabase.findByIndex(refererIndex);
             if (refererAccount) {
-                refCode += refererAccount.tgId;
+                refCode += `ref${refererAccount.tgId}`;
                 break;
             }
 
-            baseLogger.accentLog(`[XRUM_${user.index}] В базе не найден аккаунт referer. Задержка 10 минут...`);
-            await sleep(60 * 10);
+            baseLogger.accentLog(`[XRUM_${user.index}] В базе не найден аккаунт referer. Задержка 5 минут...`);
+            await sleep(60 * 5);
         }
 
         const { telegramClient } = await telegramApi.createClientBySession({
@@ -46,8 +46,9 @@ export const runHrumWorker = async (user: TAccountData) => {
             });
 
             await hrum.start();
-            await sleep(hrum.secondsUntilUTCHour(7));
-            baseLogger.log('[HRUM] Применена задержка до следующего круга');
+            const delay = hrum.secondsUntilUTCHour(random(7, 9));
+            baseLogger.log('[HRUM] Применена задержка до следующего круга. Часов ', delay * 60 * 60);
+            await sleep(delay);
         } catch (error) {
             errors++;
             baseLogger.error('[HRUM] WORKER ERROR', error);

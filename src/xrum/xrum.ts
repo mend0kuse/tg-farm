@@ -3,10 +3,10 @@ import { TAccountData } from '../accounts-generator';
 import { BaseLogger } from '../shared/logger';
 import axios, { AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
-import { sleep, toInputUser } from '@mtcute/node/utils.js';
+import { toInputUser } from '@mtcute/node/utils.js';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import crypto from 'crypto';
-import { random, shuffleArray } from '../shared/utils';
+import { random, shuffleArray, sleep } from '../shared/utils';
 import { tonUtility } from '../shared/ton/ton-utility';
 import { SendMode, fromNano, internal, toNano } from '@ton/core';
 import { xrumDatabase } from './database';
@@ -76,18 +76,10 @@ export class Xrum {
 
         mainLoop: while (true) {
             const delayInMinutes = random(1, 30);
-
-            this.logger.accentLog(
-                'Начало прохода. \n',
-                this.fullProfile ? `Кол-во токенов ${this.money}. \n` : ' ',
-                this.fullProfile ? `Кол-во друзей ${this.fullProfile.friends.length}` : ''
-            );
-
+            this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
             await sleep(delayInMinutes * 60);
-            await sleep(3);
 
             let loginAttempts = 0;
-
             loginLoop: while (true) {
                 try {
                     await this.login();
@@ -124,6 +116,13 @@ export class Xrum {
 
             if (!this.fullProfile) continue mainLoop;
 
+            this.logger.accentLog(
+                'Успешный логин. Начало прохода. \n',
+                this.fullProfile ? `Токены = ${this.money}. \n` : ' ',
+                this.fullProfile ? `Печенья = ${this.cookiesHistory?.length}. \n` : ' ',
+                this.fullProfile ? `Друзья = ${this.fullProfile.friends.length}` : ''
+            );
+
             if (!this.isCreated) {
                 try {
                     await xrumDatabase.createAccount({ index: this.account.index, tokens: 0, tgId: this.account.id });
@@ -136,7 +135,13 @@ export class Xrum {
 
             await sleep(random(5, 10));
 
-            const actions = [this.openCookie, this.completeAvailableQuests, this.connectWallet, this.sendTransaction];
+            const actions = [
+                this.openCookie,
+                this.completeAvailableQuests,
+                this.connectWallet,
+                this.sendTransaction,
+                this.claimCompleted,
+            ];
 
             shuffleArray(actions);
 
@@ -169,7 +174,7 @@ export class Xrum {
 
     async getWebAppDataUrl() {
         if (!this.peer) {
-            this.peer = await this.telegramClient.resolvePeer(7041524291);
+            this.peer = await this.telegramClient.resolvePeer('hrummebot');
         }
 
         try {
@@ -216,7 +221,9 @@ export class Xrum {
         const params = new URLSearchParams(extractedData);
         const userHash = params.get('hash') ?? '';
 
-        this.logger.log('REF CODE: ' + this.refCode);
+        if (this.refCode) {
+            this.logger.log('REF CODE: ' + this.refCode);
+        }
 
         const login_data = {
             data: {
@@ -277,6 +284,16 @@ export class Xrum {
         }
     }
 
+    async claimCompleted() {
+        this.logger.log('Сбор награды за выполненные квесты');
+
+        const completedQuests = this.fullProfile.quests.filter((quest: any) => !quest.isRewarded);
+
+        for (const quest of completedQuests) {
+            await this.claimQuestReward(quest.key);
+        }
+    }
+
     async completeAvailableQuests() {
         this.logger.log('Выполнение квестов');
 
@@ -300,7 +317,11 @@ export class Xrum {
                 }
 
                 await sleep(random(5, 10));
-                await this.checkAndClaimQuest(key);
+                try {
+                    await this.checkAndClaimQuest(key);
+                } catch {
+                    //
+                }
             }
 
             if (checkType === 'fakeCheck') {
@@ -330,6 +351,7 @@ export class Xrum {
             await this.claimQuestReward(quest, code);
         } catch (error) {
             this.logger.error('Ошибка выполнения квеста', this.handleError(error));
+            throw error;
         }
     }
 
@@ -354,7 +376,10 @@ export class Xrum {
     }
 
     async openCookie() {
-        this.logger.log('Открываем печенье');
+        if (!this.isAvailableOpenCookie) {
+            this.logger.log('Открытие печенья недоступно');
+            return;
+        }
 
         try {
             const payload = { data: {} };
@@ -403,6 +428,7 @@ export class Xrum {
         }
 
         if (this.isCompletedQuest('ton_wallet_transaction')) {
+            this.logger.log('Транзакция уже отправлена');
             return;
         }
 
@@ -412,7 +438,7 @@ export class Xrum {
             this.logger.log('Транзакция уже отправлена');
             return;
         } catch {
-            this.logger.log('Старт отправки транзакции');
+            this.logger.log('Попытка отправки транзакции');
         }
 
         try {
@@ -466,7 +492,7 @@ export class Xrum {
     }
 
     get cookiesHistory() {
-        return this.fullProfile?.history ?? [];
+        return this.fullProfile?.history ?? null;
     }
 
     createApiHeaders(data: object) {
@@ -558,6 +584,29 @@ export class Xrum {
                 openMethod: 'qrcode',
             },
         };
+    }
+
+    private startHour = 6;
+
+    get isAvailableOpenCookie() {
+        if (!this.cookiesHistory) {
+            return false;
+        }
+
+        if (this.cookiesHistory.length === 0) {
+            return true;
+        }
+
+        const now = new Date();
+        const sixAMTodayUTC = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), this.startHour)
+        );
+
+        const sortedHistory = this.cookiesHistory.sort(
+            (a: any, b: any) => new Date(b.updateDate).getTime() - new Date(a.updateDate).getTime()
+        );
+
+        return sortedHistory[0].updateDate < sixAMTodayUTC.toISOString().replace('T', ' ');
     }
 
     secondsUntilUTCHour(targetHour: number) {

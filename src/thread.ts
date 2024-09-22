@@ -3,6 +3,7 @@ import { TAccountData } from './accounts-generator';
 import { baseLogger } from './shared/logger';
 import { mongoDatabase } from './shared/database/mongodb';
 import { runHrumWorker } from './xrum/worker';
+import { runEmpireWorker } from './xempire/worker';
 
 const user = workerData as TAccountData;
 
@@ -11,7 +12,7 @@ const user = workerData as TAccountData;
 
     baseLogger.log(`Воркер ${user.index} Старт`);
 
-    await Promise.allSettled([runEmpireWorker(user)]);
+    await Promise.allSettled([runEmpireWorker(user), runHrumWorker(user)]);
 
     await mongoDatabase.close();
 })();

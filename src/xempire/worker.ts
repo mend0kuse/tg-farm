@@ -5,7 +5,7 @@ import { parseSocks5Proxy, sleep, random } from '../shared/utils';
 import { xEmpireDatabase } from './database';
 import { XEmpire } from './xempire';
 
-export const runEmpireWorker = async (user: TAccountData & { refCode: string }) => {
+export const runEmpireWorker = async (user: TAccountData) => {
     let cycle = 1;
 
     try {
@@ -34,7 +34,7 @@ export const runEmpireWorker = async (user: TAccountData & { refCode: string }) 
                 ua: user.userAgent,
                 proxy: user.proxy,
                 mnemonic: user.mnemonicTon,
-                refCode: user.refCode,
+                refCode: '',
             }).start();
         } catch (error) {
             baseLogger.error(error);
