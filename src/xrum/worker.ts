@@ -47,7 +47,7 @@ export const runHrumWorker = async (user: TAccountData) => {
 
             await hrum.start();
             const delay = hrum.secondsUntilUTCHour(random(7, 9));
-            baseLogger.log('[HRUM] Применена задержка до следующего круга. Часов ', delay * 60 * 60);
+            baseLogger.log('[HRUM] Применена задержка до следующего круга. Часов ', delay / 60 / 60);
             await sleep(delay);
         } catch (error) {
             errors++;
