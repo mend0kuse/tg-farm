@@ -111,6 +111,7 @@ export class XEmpire {
                     break loginLoop;
                 } catch (error) {
                     if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                        await sleep(error.seconds * 5);
                         return;
                     }
 
