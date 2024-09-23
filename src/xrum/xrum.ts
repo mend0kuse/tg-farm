@@ -22,7 +22,6 @@ export class Xrum {
     private refCode = `ref${APP_CONFIG.MASTER_USER_ID}`;
     private logger;
     private isCreated: boolean = false;
-    private continuousFloodErrors = 0;
     private api: AxiosInstance;
 
     constructor({

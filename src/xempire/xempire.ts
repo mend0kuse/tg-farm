@@ -729,7 +729,7 @@ export class XEmpire {
 
     async getWebAppDataUrl() {
         if (!this.peer) {
-            this.peer = await this.telegramClient.resolvePeer('empirebot');
+            this.peer = await this.telegramClient.resolvePeer('muskempire_bot');
         }
 
         try {
