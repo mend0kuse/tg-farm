@@ -75,7 +75,7 @@ export class Xrum {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            const delayInMinutes = random(1, 30);
+            const delayInMinutes = random(1, 60);
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
             await sleep(delayInMinutes * 60);
 
@@ -85,22 +85,16 @@ export class Xrum {
                     await this.login();
                     break loginLoop;
                 } catch (error) {
+                    if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                        throw new Error('FLOOD');
+                    }
+
                     if (loginAttempts > 5) {
                         throw new Error('5 Неудачных логинов');
                     }
 
-                    if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
-                        if (this.continuousFloodErrors > 4) {
-                            throw new Error('FLOOD');
-                        }
-
-                        this.continuousFloodErrors++;
-
-                        continue mainLoop;
-                    }
-
                     this.logger.error('Неудачный логин, задержка...', this.handleError(error));
-                    await sleep(random(10, 15));
+                    await sleep(random(100, 150));
                     loginAttempts++;
 
                     continue loginLoop;
@@ -201,21 +195,7 @@ export class Xrum {
     async login() {
         this.logger.log('Логин');
 
-        let url = '';
-
-        try {
-            url = await this.getWebAppDataUrl();
-            this.continuousFloodErrors = 0;
-        } catch (e) {
-            if (tl.RpcError.is(e, 'FLOOD_WAIT_%d')) {
-                this.continuousFloodErrors++;
-                this.logger.error(`FLOOD_WAIT Ожидание ${e.seconds + 60} секунд...`);
-                await sleep(e.seconds + 60);
-                url = await this.getWebAppDataUrl();
-            } else {
-                throw e;
-            }
-        }
+        const url = await this.getWebAppDataUrl();
 
         const extractedData = telegramApi.extractWebAppData(url);
         const params = new URLSearchParams(extractedData);

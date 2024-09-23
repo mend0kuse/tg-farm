@@ -63,14 +63,6 @@ export class TelegramApi {
             password: async () => await terminalPrompt('Password > '),
         });
 
-        tg.onError((err) => {
-            if (this.isProxyError(err)) {
-                return;
-            }
-
-            baseLogger.error(err);
-        });
-
         const sessionResult = await tg.exportSession();
 
         return { telegramClient: tg, sessionResult };

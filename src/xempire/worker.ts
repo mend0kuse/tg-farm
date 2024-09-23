@@ -24,6 +24,7 @@ export const runEmpireWorker = async (user: TAccountData) => {
         const { telegramClient } = await telegramApi.createClientBySession({
             proxy: parseSocks5Proxy(user.proxy),
             sessionName: user.index.toString(),
+            session: user.session,
         });
 
         try {
@@ -39,8 +40,11 @@ export const runEmpireWorker = async (user: TAccountData) => {
             baseLogger.error(error);
         }
 
-        baseLogger.log(`[X_33] прервался. Круг ${cycle}`);
+        const message = `[X_${user.index}]. Воркер прервался. Круг ${cycle}`;
+        await telegramApi.sendBotNotification(message);
+        baseLogger.log(message);
 
+        await telegramClient.close();
         await sleep(random(30 * 60, 60 * 60));
         cycle++;
     }
