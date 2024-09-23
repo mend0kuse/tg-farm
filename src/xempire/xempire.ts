@@ -24,7 +24,6 @@ export class XEmpire {
     private peer: null | tl.TypeInputPeer = null;
     private refCode;
     private logger;
-    private continuousFloodErrors = 0;
     private externalData: {
         youtube: Record<string, string | number>;
         investmentComboKeys: string[] | null;
@@ -91,7 +90,7 @@ export class XEmpire {
         mainLoop: while (true) {
             cycleNumber++;
 
-            const firstCycleDelayMinutes = random(1, 30);
+            const firstCycleDelayMinutes = random(10, 60);
             const delayInMinutes = this.level ? this.getDelayByLevel(this.level) : firstCycleDelayMinutes;
 
             this.logger.accentLog(
@@ -124,20 +123,11 @@ export class XEmpire {
                     }
 
                     if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
-                        await this.telegramClient.close();
-                        await this.telegramClient.start();
+                        await telegramApi.sendBotNotification(
+                            `[EMPIRE]. Воркер ${this.index}. Ошибка по флуду. Выключение...`
+                        );
 
-                        if (this.continuousFloodErrors > 4) {
-                            await telegramApi.sendBotNotification(
-                                `[EMPIRE]. Воркер ${this.index}. Ошибка по флуду #${this.continuousFloodErrors}. Выключение...`
-                            );
-
-                            return;
-                        }
-
-                        this.continuousFloodErrors++;
-
-                        continue mainLoop;
+                        return;
                     }
 
                     loginError = error;
@@ -777,12 +767,10 @@ export class XEmpire {
 
         try {
             url = await this.getWebAppDataUrl();
-            this.continuousFloodErrors = 0;
         } catch (e) {
             if (tl.RpcError.is(e, 'FLOOD_WAIT_%d')) {
-                this.continuousFloodErrors++;
-                this.logger.error(`FLOOD_WAIT Ожидание ${e.seconds + 60} секунд...`);
-                await sleep(e.seconds + 60);
+                this.logger.error(`FLOOD_WAIT Ожидание ${e.seconds * 2} секунд...`);
+                await sleep(e.seconds * 2);
                 url = await this.getWebAppDataUrl();
             } else {
                 throw e;
