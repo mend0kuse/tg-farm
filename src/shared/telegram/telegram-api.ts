@@ -17,12 +17,19 @@ export class TelegramApi {
         }
     }
 
-    async joinChannel(client: TelegramClient, channelName: string) {
+    async joinChannel(client: TelegramClient, channelName: string | number) {
         const channel = await client.resolveChannel(channelName);
 
         return client.call({
             _: 'channels.joinChannel',
             channel,
+        });
+    }
+
+    async updateProfile(client: TelegramClient, profile: { firstName?: string; lastName?: string; about?: string }) {
+        return client.call({
+            _: 'account.updateProfile',
+            ...profile,
         });
     }
 
@@ -37,7 +44,7 @@ export class TelegramApi {
             apiId: APP_CONFIG.API_CLIENT_ID,
             apiHash: APP_CONFIG.API_CLIENT_HASH,
             storage: `sessions/${sessionName}.session`,
-            logLevel: 0,
+            logLevel: 3,
             initConnectionOptions: {
                 appVersion: '2.0',
                 deviceModel: 'Android',
