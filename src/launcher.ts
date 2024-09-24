@@ -1,7 +1,7 @@
 import { excelUtility } from './shared/excel/excel';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { TAccountData } from './accounts-generator';
+import { TAccountData } from './scripts/accounts-generator';
 import { baseLogger } from './shared/logger';
 import { Worker } from 'worker_threads';
 import { shuffleArray } from './shared/utils';

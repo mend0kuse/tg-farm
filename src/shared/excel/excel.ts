@@ -1,6 +1,6 @@
 import fs from 'fs';
 import xlsx from 'xlsx';
-import { TAccountData } from '../../accounts-generator';
+import { TAccountData } from '../../scripts/accounts-generator';
 
 export class ExcelUtility {
     getAccounts(filePath: string): TAccountData[] {

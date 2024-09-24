@@ -1,17 +1,17 @@
-import { sleep, random, parseSocks5Proxy, randomArrayItem, terminalPrompt } from './shared/utils';
+import { sleep, random, parseSocks5Proxy, randomArrayItem, terminalPrompt } from '../shared/utils';
 import path from 'path';
 import fs from 'fs';
 import xlsx from 'xlsx';
-import { baseLogger } from './shared/logger';
-import { getRandomAndroidUserAgent } from './shared/user-agent';
+import { baseLogger } from '../shared/logger';
+import { getRandomAndroidUserAgent } from '../shared/user-agent';
 import { fileURLToPath } from 'url';
-import { telegramApi } from './shared/telegram/telegram-api';
-import { tonUtility } from './shared/ton/ton-utility';
+import { telegramApi } from '../shared/telegram/telegram-api';
+import { tonUtility } from '../shared/ton/ton-utility';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const proxiesPath = path.join(__dirname, '..', 'proxies.txt');
+const proxiesPath = path.join(__dirname, '..', '..', 'proxies.txt');
 const GENERATE_USERS_COUNT = Number(await terminalPrompt('Кол-во аккаунтов:'));
 
 export type TAccountData = {
@@ -80,7 +80,7 @@ const processAccounts = async () => {
         results.push(await createAccount(i + 1));
     }
 
-    const pathToFile = path.join(__dirname, '..', 'accounts.xlsx');
+    const pathToFile = path.join(__dirname, '..', '..', 'accounts.xlsx');
     if (fs.existsSync(pathToFile)) {
         const workbook = xlsx.readFile(pathToFile);
 

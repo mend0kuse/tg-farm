@@ -1,5 +1,5 @@
 import { workerData } from 'worker_threads';
-import { TAccountData } from './accounts-generator';
+import { TAccountData } from './scripts/accounts-generator';
 import { baseLogger } from './shared/logger';
 import { mongoDatabase } from './shared/database/mongodb';
 import { runHrumWorker } from './xrum/worker';

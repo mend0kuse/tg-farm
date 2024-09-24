@@ -1,5 +1,5 @@
 import { TelegramClient, tl } from '@mtcute/node';
-import { TAccountData } from '../accounts-generator';
+import { TAccountData } from '../scripts/accounts-generator';
 import { BaseLogger } from '../shared/logger';
 import axios, { AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';

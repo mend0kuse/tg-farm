@@ -1,4 +1,4 @@
-import { TAccountData } from '../accounts-generator';
+import { TAccountData } from '../scripts/accounts-generator';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { parseSocks5Proxy, random, sleep } from '../shared/utils';
