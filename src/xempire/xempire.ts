@@ -932,7 +932,7 @@ export class XEmpire {
     async getExternalData() {
         try {
             this.logger.log('Получение внешних данных...');
-            const { data } = await axios.get(APP_CONFIG.EXTERNAL_DATA_URL);
+            const { data } = await axios.get(APP_CONFIG.EXTERNAL_DATA_URL_MUSK);
 
             this.externalData = data.data;
         } catch (error) {
