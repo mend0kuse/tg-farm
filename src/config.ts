@@ -14,7 +14,8 @@ export const APP_CONFIG = {
 
     // ---- EXTERNAL ----
 
-    EXTERNAL_DATA_URL: process.env.EXTERNAL_DATA_URL ?? '',
+    EXTERNAL_DATA_URL_MUSK: process.env.EXTERNAL_DATA_URL_MUSK ?? '',
+    EXTERNAL_DATA_URL_CATS: process.env.EXTERNAL_DATA_URL_CATS ?? '',
 
     // ---- NOTIFICATIONS ----
 

@@ -7,6 +7,7 @@ import { toInputUser } from '@mtcute/node/utils.js';
 import { random, sleep, shuffleArray } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { catsDatabase } from './database';
+import { APP_CONFIG } from '../config';
 
 export class Cats {
     private account: TAccountData;
@@ -19,6 +20,9 @@ export class Cats {
     private peer: null | tl.TypeInputPeer = null;
     private webDataUrl: null | string = null;
     private isCreated: boolean = false;
+    private externalData: {
+        channelsNameByUrl: Record<string, string>;
+    } | null = null;
 
     constructor({
         account,
@@ -102,8 +106,6 @@ export class Cats {
                 continue mainLoop;
             }
 
-            await this.telegramClient.close();
-
             this.logger.accentLog(
                 'Успешный логин. Начало прохода. \n',
                 this.profile ? `Токены = ${this.profile.currentRewards}. \n` : ' '
@@ -124,6 +126,7 @@ export class Cats {
             }
 
             await sleep(random(5, 10));
+            await this.getExternalData();
 
             const actions = [this.completeTasks];
 
@@ -146,6 +149,7 @@ export class Cats {
                 this.logger.error('Ошибка обновления токенов:', error);
             }
 
+            await this.telegramClient.close();
             this.logger.accentLog('Конец прохода');
             return;
         }
@@ -220,57 +224,94 @@ export class Cats {
                         });
 
                         const checked = await this.checkTask(id, title);
-                        if (checked) {
-                            const completed = await this.completeTask(id, title);
-                            if (!completed) {
-                                throw new Error('Не удалось выполнить задание');
-                            }
-
-                            this.logger.log('Успешно выполнено задание: ', task.title);
-                        } else {
+                        if (!checked) {
                             throw new Error('Не удалось проверить задание');
                         }
+
+                        this.logger.log('Успешно выполнено задание: ', task.title);
                     } catch (error) {
                         this.logger.error('Ошибка при изменении ника', this.handleError(error));
                     }
                 }
 
                 if (type === 'OPEN_LINK') {
-                    const isSuccess = await this.completeTask(id, title);
-                    if (isSuccess) {
+                    try {
+                        const isSuccess = await this.completeTask(id, title);
+                        if (!isSuccess) {
+                            throw new Error('isSuccess=false');
+                        }
+
                         this.logger.log('Успешно выполнено задание: ', task.title);
+                    } catch (error) {
+                        this.logger.error('Ошибка при открытии ссылки:', this.handleError(error));
                     }
                 }
 
                 if (type === 'SUBSCRIBE_TO_CHANNEL') {
                     try {
-                        const match = task.params.channelUrl.match(/https:\/\/t\.me\/([a-zA-Z0-9_]+)/);
-                        if (match?.[1]) {
-                            await telegramApi.joinChannel(this.telegramClient, match?.[1]);
-                        } else {
-                            throw new Error('Не удалось распарсить название');
+                        const channelName = await this.getChannelNameFromUniqueLink(task.params.channelUrl);
+                        if (!channelName) {
+                            throw new Error('Не удалось найти channelName');
                         }
 
-                        // await telegramApi.joinChannel(this.telegramClient, task.params.channelId);
+                        await telegramApi.joinChannel(this.telegramClient, channelName);
 
                         const isChecked = await this.checkTask(id, title);
-                        if (isChecked) {
-                            const completed = await this.completeTask(id, title);
-                            if (!completed) {
-                                throw new Error('Не удалось выполнить задание');
-                            }
-                        } else {
+                        if (!isChecked) {
                             throw new Error('Не удалось проверить задание');
                         }
 
-                        this.logger.log('Успешно выполнено задание: ', task.title);
+                        this.logger.log('Успешно выполнено задание: ', title);
                     } catch (error) {
-                        this.logger.error('Ошибка при подключении к каналу', task.title, this.handleError(error));
+                        this.logger.error('Ошибка при подключении к каналу: ', title, this.handleError(error));
                     }
                 }
             }
         } catch (error) {
             this.logger.error('Ошибка выполнения заданий', this.handleError(error));
+        }
+    }
+
+    async getChannelNameFromUniqueLink(url: string) {
+        const match = url.match(/https:\/\/t\.me\/([a-zA-Z0-9_]+)/);
+
+        if (match?.[1]) {
+            return match[1];
+        }
+
+        const founded = this.externalData?.channelsNameByUrl[url] ?? '';
+
+        if (founded) {
+            return founded;
+        }
+
+        if (this.externalData?.channelsNameByUrl) {
+            await telegramApi.sendBotNotification(`[CATS_${this.account.index}] Нужен username для канала: ` + url);
+        }
+
+        return null;
+    }
+
+    async checkAndCompleteTask(id: number | string, title?: string) {
+        const isChecked = await this.checkTask(id, title);
+        if (!isChecked) {
+            throw new Error('Не удалось проверить задание');
+        }
+
+        const completed = await this.completeTask(id, title);
+        if (!completed) {
+            throw new Error('Не удалось выполнить задание');
+        }
+    }
+
+    async getExternalData() {
+        try {
+            this.logger.log('Получение внешних данных...');
+            const { data } = await axios.get(APP_CONFIG.EXTERNAL_DATA_URL_CATS);
+
+            this.externalData = data.data;
+        } catch (error) {
+            this.logger.error('Ошибка получения внешних данных!', this.handleError(error));
         }
     }
 
