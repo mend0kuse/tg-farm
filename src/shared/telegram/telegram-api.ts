@@ -44,7 +44,7 @@ export class TelegramApi {
             apiId: APP_CONFIG.API_CLIENT_ID,
             apiHash: APP_CONFIG.API_CLIENT_HASH,
             storage: `sessions/${sessionName}.session`,
-            logLevel: 3,
+            logLevel: 0,
             initConnectionOptions: {
                 appVersion: '2.0',
                 deviceModel: 'Android',
