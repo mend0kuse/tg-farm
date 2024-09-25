@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "make": "npx tsx ./src/accounts-generator.ts",
+        "make": "npx tsx ./src/scripts/accounts-generator.ts",
         "launch": "npx tsx ./src/launcher.ts",
         "build": "tsc",
         "start": "node --experimental-specifier-resolution=node dist/launcher.js",

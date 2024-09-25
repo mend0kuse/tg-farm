@@ -10,7 +10,7 @@ export const runHrumWorker = async (user: TAccountData) => {
 
     // const refererIndex = REFERRAL_MAP[user.index];
     const refCode = '';
-    const isCreated = true;
+    const isCreated = false;
 
     xrumDatabase.init();
 

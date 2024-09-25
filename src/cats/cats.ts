@@ -77,7 +77,7 @@ export class Cats {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            const delayInMinutes = random(1, 30);
+            const delayInMinutes = random(1, 120);
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
             await sleep(delayInMinutes * 60);
 

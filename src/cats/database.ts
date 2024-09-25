@@ -19,9 +19,9 @@ export class CatsDatabase extends SQLite3Database {
             .run();
     }
 
-    createAccount(args: { index: number; refCode: string; tokens: number }) {
+    createAccount(args: { index: number; tokens: number; refCode: string }) {
         return this.db
-            .prepare('INSERT INTO CatsAccount (accountIndex, refCode, tokens) VALUES (?, ?, ?)')
+            .prepare('INSERT INTO CatsAccount (accountIndex, tokens, refCode) VALUES (?, ?, ?)')
             .run(Object.values(args));
     }
 
