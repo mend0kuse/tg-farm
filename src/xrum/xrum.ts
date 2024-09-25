@@ -273,6 +273,7 @@ export class Xrum {
         const completedQuests = this.fullProfile.quests.filter((quest: any) => !quest.isRewarded);
 
         for (const quest of completedQuests) {
+            await sleep(random(5, 10));
             await this.claimQuestReward(quest.key);
         }
     }
@@ -310,6 +311,13 @@ export class Xrum {
             if (checkType === 'fakeCheck') {
                 await sleep(random(5, 10));
                 await this.claimQuestReward(key);
+            }
+
+            if (checkType === 'username') {
+                await sleep(random(5, 10));
+                await telegramApi.updateProfile(this.telegramClient, {
+                    firstName: this.fullProfile.firstName + ' ' + checkData,
+                });
             }
         }
     }
