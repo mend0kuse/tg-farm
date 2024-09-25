@@ -17,13 +17,16 @@ async function createUserThread(user: TAccountData) {
             workerData: user,
         });
 
-        worker.on('message', resolve);
+        worker.on('message', (msg) => {
+            baseLogger.log('Worker msg:', msg);
+            resolve(msg);
+        });
         worker.on('error', (err) => {
             baseLogger.error('Worker error:', err);
             reject(err);
         });
         worker.on('exit', (code) => {
-            if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
+            reject(new Error(`Worker stopped with exit code ${code}`));
         });
     });
 }

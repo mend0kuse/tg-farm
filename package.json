@@ -27,15 +27,16 @@
         "@ton/crypto": "^3.3.0",
         "@ton/ton": "^15.0.0",
         "axios": "^1.7.7",
+        "better-sqlite3": "^11.3.0",
         "bybit-api": "^3.10.18",
         "crypto": "^1.0.1",
         "dotenv": "^16.4.5",
         "moment-timezone": "^0.5.45",
         "socks-proxy-agent": "^8.0.4",
-        "sqlite3": "^5.1.7",
         "xlsx": "^0.18.5"
     },
     "devDependencies": {
+        "@types/better-sqlite3": "^7.6.11",
         "@types/mongoose": "^5.11.97",
         "@types/node": "^22.5.4",
         "@types/xlsx": "^0.0.36",

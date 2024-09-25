@@ -6,66 +6,35 @@ export class CatsDatabase extends SQLite3Database {
     }
 
     init() {
-        this.db.run(
-            `
+        return this.db
+            .prepare(
+                `
             CREATE TABLE IF NOT EXISTS CatsAccount (
-                index INTEGER PRIMARY KEY,
+                accountIndex INTEGER PRIMARY KEY,
                 tokens INTEGER,
                 refCode TEXT
             )
-        `,
-            (err) => {
-                if (err) {
-                    this.logger.error('Error creating table:', err);
-                }
-            }
-        );
+        `
+            )
+            .run();
     }
 
     createAccount(args: { index: number; refCode: string; tokens: number }) {
-        const { index, refCode, tokens } = args;
-
-        this.db.run(
-            'INSERT INTO CatsAccount (index, refCode, tokens) VALUES (?, ?, ?)',
-            [index, refCode, tokens],
-            (err) => {
-                if (err) {
-                    this.logger.error('Error creating account:', err);
-                }
-            }
-        );
+        return this.db
+            .prepare('INSERT INTO CatsAccount (accountIndex, refCode, tokens) VALUES (?, ?, ?)')
+            .run(Object.values(args));
     }
 
-    findByIndex(index: number): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this.db.get('SELECT * FROM CatsAccount WHERE index = ?', [index], (err, row) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(row);
-                }
-            });
-        });
+    findByIndex(index: number) {
+        return this.db.prepare('SELECT * FROM CatsAccount WHERE accountIndex = ?').get([index]);
     }
 
     updateTokensByIndex(index: number, tokens: number) {
-        this.db.run('UPDATE CatsAccount SET tokens = ? WHERE index = ?', [tokens, index], (err) => {
-            if (err) {
-                this.logger.error('Error updating tokens:', err);
-            }
-        });
+        return this.db.prepare('UPDATE CatsAccount SET tokens = ? WHERE accountIndex = ?').run([tokens, index]);
     }
 
-    findAll(): Promise<any[]> {
-        return new Promise((resolve, reject) => {
-            this.db.all('SELECT * FROM CatsAccount', (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows);
-                }
-            });
-        });
+    findAll() {
+        return this.db.prepare('SELECT * FROM CatsAccount').all();
     }
 }
 

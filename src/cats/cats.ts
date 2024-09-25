@@ -258,6 +258,8 @@ export class Cats {
                             throw new Error('Не удалось найти channelName');
                         }
 
+                        await sleep(random(60, 120));
+
                         await telegramApi.joinChannel(this.telegramClient, channelName);
 
                         const isChecked = await this.checkTask(id, title);

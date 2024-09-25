@@ -8,6 +8,8 @@ import { catsDatabase } from './database';
 export const runCatsWorker = async (user: TAccountData) => {
     let errors = 0;
 
+    catsDatabase.init();
+
     // const refererIndex = REFERRAL_MAP[user.index];
     const refCode = 'SfBw9snEPstwWptCAwjrV';
     let isCreated = false;
@@ -16,8 +18,6 @@ export const runCatsWorker = async (user: TAccountData) => {
     if (myAccount) {
         isCreated = true;
     }
-
-    catsDatabase.init();
 
     while (errors < 5) {
         // while (true) {

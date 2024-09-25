@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+    app:
+        build: .
+        ports:
+            - '9999:9999'
+        volumes:
+            - ./db:/app/db
+        command: npm start
