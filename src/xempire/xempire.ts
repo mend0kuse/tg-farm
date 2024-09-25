@@ -115,6 +115,7 @@ export class XEmpire {
                     break loginLoop;
                 } catch (error) {
                     if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                        this.logger.error('FLOOD');
                         await sleep(error.seconds * 5);
                         return;
                     }
@@ -732,7 +733,7 @@ export class XEmpire {
 
     async getWebAppDataUrl() {
         if (!this.peer) {
-            this.peer = await this.telegramClient.resolvePeer('muskempire_bot');
+            this.peer = await this.telegramClient.resolvePeer('empirebot');
         }
 
         try {
