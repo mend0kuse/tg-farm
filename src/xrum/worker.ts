@@ -2,6 +2,7 @@ import { TAccountData } from '../scripts/accounts-generator';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { parseSocks5Proxy, random, sleep } from '../shared/utils';
+import { xrumDatabase } from './database';
 import { Xrum } from './xrum';
 
 export const runHrumWorker = async (user: TAccountData) => {
@@ -10,6 +11,8 @@ export const runHrumWorker = async (user: TAccountData) => {
     // const refererIndex = REFERRAL_MAP[user.index];
     const refCode = '';
     const isCreated = true;
+
+    xrumDatabase.init();
 
     while (errors < 5) {
         // while (true) {
@@ -41,6 +44,7 @@ export const runHrumWorker = async (user: TAccountData) => {
                 account: user,
                 refCode,
                 isCreated,
+                database: xrumDatabase,
             });
 
             await hrum.start();

@@ -17,6 +17,8 @@ export const runCatsWorker = async (user: TAccountData) => {
         isCreated = true;
     }
 
+    catsDatabase.init();
+
     while (errors < 5) {
         // while (true) {
         //     const myAccount = await catsDatabase.findByIndex(user.index);
@@ -51,6 +53,7 @@ export const runCatsWorker = async (user: TAccountData) => {
                 account: user,
                 refCode,
                 isCreated,
+                database: catsDatabase,
             });
 
             baseLogger.log(`[CATS_${user.index}] Старт воркера`);

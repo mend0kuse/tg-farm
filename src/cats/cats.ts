@@ -6,11 +6,12 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import { toInputUser } from '@mtcute/node/utils.js';
 import { random, sleep, shuffleArray } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
-import { catsDatabase } from './database';
 import { APP_CONFIG } from '../config';
+import { CatsDatabase } from './database';
 
 export class Cats {
     private account: TAccountData;
+    private database: CatsDatabase;
     private profile: any;
     private refCode: string;
     private telegramClient: TelegramClient;
@@ -29,13 +30,16 @@ export class Cats {
         refCode,
         isCreated,
         telegramClient,
+        database,
     }: {
         account: TAccountData;
         refCode: string;
         telegramClient: TelegramClient;
         isCreated: boolean;
+        database: CatsDatabase;
     }) {
         this.isCreated = isCreated;
+        this.database = database;
         this.account = account;
         this.refCode = refCode;
         this.telegramClient = telegramClient;
@@ -73,7 +77,7 @@ export class Cats {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            const delayInMinutes = random(1, 10);
+            const delayInMinutes = random(1, 30);
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
             await sleep(delayInMinutes * 60);
 
@@ -113,7 +117,7 @@ export class Cats {
 
             if (!this.isCreated) {
                 try {
-                    await catsDatabase.createAccount({
+                    this.database.createAccount({
                         index: this.account.index,
                         tokens: this.profile.currentRewards,
                         refCode: this.profile.referrerCode,
@@ -144,7 +148,7 @@ export class Cats {
             }
 
             try {
-                await catsDatabase.updateTokensByIndex(this.account.index, this.profile.currentRewards);
+                this.database.updateTokensByIndex(this.account.index, this.profile.currentRewards);
             } catch (error) {
                 this.logger.error('Ошибка обновления токенов:', error);
             }

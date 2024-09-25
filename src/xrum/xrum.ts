@@ -9,8 +9,8 @@ import crypto from 'crypto';
 import { random, shuffleArray, sleep } from '../shared/utils';
 import { tonUtility } from '../shared/ton/ton-utility';
 import { SendMode, fromNano, internal, toNano } from '@ton/core';
-import { xrumDatabase } from './database';
 import { APP_CONFIG } from '../config';
+import { XrumDatabase } from './database';
 
 export class Xrum {
     private API_URL = 'https://api.hrum.me';
@@ -23,18 +23,22 @@ export class Xrum {
     private logger;
     private isCreated: boolean = false;
     private api: AxiosInstance;
+    private database: XrumDatabase;
 
     constructor({
         account,
         telegramClient,
         refCode,
         isCreated,
+        database,
     }: {
         isCreated: boolean;
         refCode: string;
         account: TAccountData;
+        database: XrumDatabase;
         telegramClient: TelegramClient;
     }) {
+        this.database = database;
         this.isCreated = isCreated;
         this.logger = new BaseLogger(`HRUM_${account.index}`);
         this.refCode = refCode;
@@ -118,7 +122,7 @@ export class Xrum {
 
             if (!this.isCreated) {
                 try {
-                    await xrumDatabase.createAccount({ index: this.account.index, tokens: 0, tgId: this.account.id });
+                    this.database.createAccount({ index: this.account.index, tokens: 0, tgId: this.account.id });
                     this.isCreated = true;
                     this.logger.error('Успешно добавлен в базу');
                 } catch (error) {
@@ -154,7 +158,7 @@ export class Xrum {
 
             try {
                 if (this.money) {
-                    await xrumDatabase.updateTokensByIndex(this.account.index, this.money);
+                    this.database.updateTokensByIndex(this.account.index, this.money);
                 }
             } catch (error) {
                 this.logger.error('Ошибка обновления токенов:', error);

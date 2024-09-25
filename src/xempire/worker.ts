@@ -8,10 +8,12 @@ import { XEmpire } from './xempire';
 export const runEmpireWorker = async (user: TAccountData) => {
     let cycle = 1;
 
+    xEmpireDatabase.init();
+
     try {
         const savedAccount = await xEmpireDatabase.findByIndex(Number(user.index));
         if (!savedAccount) {
-            await xEmpireDatabase.createAccount({ index: user.index, refCode: `hero${user.id}`, level: 1 });
+            xEmpireDatabase.createAccount({ index: user.index, refCode: `hero${user.id}`, level: 1 });
             baseLogger.log(`EMPIRE ${user.index} успешно добавлен в базу.`);
         } else {
             baseLogger.log(`EMPIRE ${user.index} загружен из базы.}`);
@@ -34,6 +36,7 @@ export const runEmpireWorker = async (user: TAccountData) => {
                 ua: user.userAgent,
                 proxy: user.proxy,
                 mnemonic: user.mnemonicTon,
+                database: xEmpireDatabase,
                 refCode: '',
             }).start();
         } catch (error) {

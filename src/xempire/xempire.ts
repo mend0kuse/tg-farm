@@ -10,12 +10,13 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import { TelegramClient, tl } from '@mtcute/node';
 import { toInputUser } from '@mtcute/node/utils.js';
 import { telegramApi } from '../shared/telegram/telegram-api';
-import { xEmpireDatabase } from './database';
+import { XEmpireDatabase } from './database';
 
 export class XEmpire {
     private API_URL = 'https://api.xempire.io';
 
     private api: AxiosInstance;
+    private database: XEmpireDatabase;
     private isAuthorized: boolean = false;
     private telegramClient: TelegramClient;
     private fullProfile: any = null;
@@ -36,12 +37,14 @@ export class XEmpire {
         mnemonic,
         refCode,
         index,
+        database,
     }: {
         proxy?: string;
         ua: string;
         telegramClient: TelegramClient;
         mnemonic: string;
         refCode: string;
+        database: XEmpireDatabase;
         index: number;
     }) {
         this.logger = new BaseLogger(`X_${index}`);
@@ -49,6 +52,7 @@ export class XEmpire {
         this.telegramClient = telegramClient;
         this.mnemonic = mnemonic.split(' ');
         this.refCode = refCode;
+        this.database = database;
         this.index = index;
 
         const agent = proxy ? new SocksProxyAgent(proxy) : undefined;
@@ -181,8 +185,7 @@ export class XEmpire {
 
             try {
                 if (this.level) {
-                    const updated = await xEmpireDatabase.updateLevelByIndex(this.index, this.level);
-                    this.logger.log('Статус обновления: ', updated.acknowledged);
+                    this.database.updateLevelByIndex(this.index, this.level);
                 }
             } catch (error) {
                 this.logger.error('Ошибка обновления базы данных', error);
