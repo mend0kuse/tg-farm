@@ -3,9 +3,9 @@ version: '3'
 services:
     app:
         build: .
+        container_name: tg-farm
         ports:
             - '9999:9999'
         volumes:
             - ./db:/app/db
-            - ./sessions:/app/sessions
         command: npm start
