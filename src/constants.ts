@@ -1,5 +1,7 @@
 export const REFERRAL_MAP: Record<number, number> = {
     2: 1,
+    9: 1,
+    12: 1,
     14: 1,
     15: 2,
     16: 2,

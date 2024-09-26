@@ -1,4 +1,4 @@
-import { sleep, random, parseSocks5Proxy, randomArrayItem, terminalPrompt } from '../shared/utils';
+import { parseSocks5Proxy, randomArrayItem } from '../shared/utils';
 import path from 'path';
 import fs from 'fs';
 import xlsx from 'xlsx';
@@ -12,7 +12,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const proxiesPath = path.join(__dirname, '..', '..', 'proxies.txt');
-const GENERATE_USERS_COUNT = Number(await terminalPrompt('Кол-во аккаунтов:'));
+
+const [, , index] = process.argv;
 
 export type TAccountData = {
     index: number;
@@ -39,11 +40,8 @@ const proxies = (() => {
     }
 })();
 
-const createAccount = async (count: number): Promise<TAccountData> => {
-    baseLogger.log(`Обработка аккаунта № ${count}`);
-
+const createAccount = async (): Promise<TAccountData> => {
     const proxy = randomArrayItem(proxies);
-    const index = await terminalPrompt('Индекс аккаунта:');
 
     const { telegramClient, sessionResult } = await telegramApi.createClientBySession({
         proxy: parseSocks5Proxy(proxy ?? ''),
@@ -68,17 +66,7 @@ const createAccount = async (count: number): Promise<TAccountData> => {
 };
 
 const processAccounts = async () => {
-    const results: TAccountData[] = [];
-
-    for (let i = 0; i < GENERATE_USERS_COUNT; i++) {
-        if (i !== 0) {
-            const delaySeconds = random(5, 10);
-            baseLogger.log('Применена задержка... ', delaySeconds);
-            await sleep(delaySeconds);
-        }
-
-        results.push(await createAccount(i + 1));
-    }
+    const result = await createAccount();
 
     const pathToFile = path.join(__dirname, '..', '..', 'accounts.xlsx');
     if (fs.existsSync(pathToFile)) {
@@ -89,7 +77,7 @@ const processAccounts = async () => {
 
         const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
-        jsonData.push(...results.map((data) => Object.values(data)));
+        jsonData.push(Object.values(result));
 
         const newWorksheet = xlsx.utils.aoa_to_sheet(jsonData);
 
