@@ -8,3 +8,4 @@ dist
 roadmap.txt
 test.ts
 *.bash
+/db
