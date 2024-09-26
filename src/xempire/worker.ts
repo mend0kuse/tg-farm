@@ -29,6 +29,8 @@ export const runEmpireWorker = async (user: TAccountData) => {
             session: user.session,
         });
 
+        baseLogger.log(`[X_${user.index}] Телеграм клиент успешно создан`);
+
         try {
             await new XEmpire({
                 telegramClient,

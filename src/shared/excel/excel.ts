@@ -1,9 +1,16 @@
 import fs from 'fs';
 import xlsx from 'xlsx';
 import { TAccountData } from '../../scripts/accounts-generator';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export class ExcelUtility {
-    getAccounts(filePath: string): TAccountData[] {
+    getAccounts(): TAccountData[] {
+        const filePath = path.join(__dirname, '..', '..', '..', 'accounts.xlsx');
+
         if (!fs.existsSync(filePath)) {
             throw new Error(`Файл не найден по пути: ${filePath}`);
         }

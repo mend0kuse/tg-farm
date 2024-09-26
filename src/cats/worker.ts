@@ -1,3 +1,4 @@
+import { REFERRAL_MAP } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
@@ -8,44 +9,54 @@ import { catsDatabase } from './database';
 export const runCatsWorker = async (user: TAccountData) => {
     let errors = 0;
 
-    catsDatabase.init();
+    try {
+        catsDatabase.init();
+    } catch (error) {
+        baseLogger.error(error);
+    }
 
-    // const refererIndex = REFERRAL_MAP[user.index];
-    const refCode = 'SfBw9snEPstwWptCAwjrV';
+    const refererIndex = REFERRAL_MAP[user.index];
+    let refCode = 'SfBw9snEPstwWptCAwjrV';
     let isCreated = false;
 
-    const myAccount = await catsDatabase.findByIndex(user.index);
-    if (myAccount) {
-        isCreated = true;
+    try {
+        const myAccount = await catsDatabase.findByIndex(user.index);
+        if (myAccount) {
+            isCreated = true;
+        }
+    } catch (error) {
+        baseLogger.error(`CATS_${user.index}`, error);
     }
 
     while (errors < 5) {
-        // while (true) {
-        //     const myAccount = await catsDatabase.findByIndex(user.index);
-        //     if (myAccount) {
-        //         isCreated = true;
-        //         break;
-        //     }
+        while (true) {
+            const myAccount = await catsDatabase.findByIndex(user.index);
+            if (myAccount) {
+                isCreated = true;
+                break;
+            }
 
-        //     const refererAccount = await catsDatabase.findByIndex(refererIndex);
-        //     if (refererAccount) {
-        //         refCode = refererAccount.refCode ?? '';
-        //         if (refCode) {
-        //             break;
-        //         }
-        //     }
+            const refererAccount: any = await catsDatabase.findByIndex(refererIndex);
+            if (refererAccount) {
+                refCode = refererAccount.refCode ?? '';
+                if (refCode) {
+                    break;
+                }
+            }
 
-        //     baseLogger.accentLog(
-        //         `[CATS_${user.index}] В базе не найден аккаунт referer ${refererIndex}. Задержка 5 минут...`
-        //     );
-        //     await sleep(60 * 5);
-        // }
+            baseLogger.accentLog(
+                `[CATS_${user.index}] В базе не найден аккаунт referer ${refererIndex}. Задержка 5 минут...`
+            );
+            await sleep(60 * 5);
+        }
 
         const { telegramClient } = await telegramApi.createClientBySession({
             session: user.session,
             proxy: parseSocks5Proxy(user.proxy),
             sessionName: user.index.toString(),
         });
+
+        baseLogger.log(`[CATS_${user.index}] Телеграм клиент успешно создан`);
 
         try {
             const cats = new Cats({

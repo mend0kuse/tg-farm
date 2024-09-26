@@ -1,15 +1,11 @@
 import { excelUtility } from './shared/excel/excel';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { TAccountData } from './scripts/accounts-generator';
 import { baseLogger } from './shared/logger';
 import { Worker } from 'worker_threads';
 import { shuffleArray } from './shared/utils';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const users = excelUtility.getAccounts(path.join(__dirname, '..', 'accounts.xlsx'));
+const users = excelUtility.getAccounts();
 
 async function createUserThread(user: TAccountData) {
     return new Promise((resolve, reject) => {

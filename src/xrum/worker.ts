@@ -12,7 +12,11 @@ export const runHrumWorker = async (user: TAccountData) => {
     const refCode = '';
     const isCreated = false;
 
-    xrumDatabase.init();
+    try {
+        xrumDatabase.init();
+    } catch (error) {
+        baseLogger.error(error);
+    }
 
     while (errors < 5) {
         // while (true) {
@@ -37,6 +41,8 @@ export const runHrumWorker = async (user: TAccountData) => {
             proxy: parseSocks5Proxy(user.proxy),
             sessionName: user.index.toString(),
         });
+
+        baseLogger.log(`[XRUM_${user.index}] Телеграм клиент успешно создан`);
 
         try {
             const hrum = new Xrum({
