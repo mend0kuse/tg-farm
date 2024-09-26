@@ -36,6 +36,10 @@ export const runCatsWorker = async (user: TAccountData) => {
                 break;
             }
 
+            if (refererIndex === 1) {
+                break;
+            }
+
             const refererAccount: any = await catsDatabase.findByIndex(refererIndex);
             if (refererAccount) {
                 refCode = refererAccount.refCode ?? '';

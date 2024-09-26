@@ -1,4 +1,7 @@
+import { APP_CONFIG } from '../config';
+import { REFERRAL_MAP } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
+import { excelUtility } from '../shared/excel/excel';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { parseSocks5Proxy, random, sleep } from '../shared/utils';
@@ -6,11 +9,13 @@ import { xrumDatabase } from './database';
 import { Xrum } from './xrum';
 
 export const runHrumWorker = async (user: TAccountData) => {
+    const accounts = excelUtility.getAccounts();
+
     let errors = 0;
 
-    // const refererIndex = REFERRAL_MAP[user.index];
-    const refCode = '';
-    const isCreated = false;
+    const refererIndex = REFERRAL_MAP[user.index];
+    let refCode = `ref${APP_CONFIG.MASTER_USER_ID}`;
+    let isCreated = false;
 
     try {
         xrumDatabase.init();
@@ -19,22 +24,23 @@ export const runHrumWorker = async (user: TAccountData) => {
     }
 
     while (errors < 5) {
-        // while (true) {
-        //     const myAccount = await xrumDatabase.findByIndex(user.index);
-        //     if (myAccount) {
-        //         isCreated = true;
-        //         break;
-        //     }
+        while (true) {
+            const myAccount = await xrumDatabase.findByIndex(user.index);
+            if (myAccount) {
+                isCreated = true;
+                break;
+            }
 
-        //     const refererAccount = await xrumDatabase.findByIndex(refererIndex);
-        //     if (refererAccount) {
-        //         refCode += `ref${refererAccount.tgId}`;
-        //         break;
-        //     }
+            const refererAccount: any = await xrumDatabase.findByIndex(refererIndex);
+            if (refererAccount) {
+                const id = accounts.find((acc) => acc.index === refererIndex)!;
+                refCode = `ref${id}`;
+                break;
+            }
 
-        //     baseLogger.accentLog(`[XRUM_${user.index}] В базе не найден аккаунт referer. Задержка 5 минут...`);
-        //     await sleep(60 * 5);
-        // }
+            baseLogger.accentLog(`[XRUM_${user.index}] В базе не найден аккаунт referer. Задержка 5 минут...`);
+            await sleep(60 * 5);
+        }
 
         const { telegramClient } = await telegramApi.createClientBySession({
             session: user.session,

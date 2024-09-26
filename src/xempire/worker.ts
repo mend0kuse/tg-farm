@@ -39,7 +39,7 @@ export const runEmpireWorker = async (user: TAccountData) => {
                 proxy: user.proxy,
                 mnemonic: user.mnemonicTon,
                 database: xEmpireDatabase,
-                refCode: '',
+                refCode: ``,
             }).start();
         } catch (error) {
             baseLogger.error(error);
