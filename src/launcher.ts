@@ -4,8 +4,12 @@ import { TAccountData } from './scripts/accounts-generator';
 import { baseLogger } from './shared/logger';
 import { Worker } from 'worker_threads';
 import { shuffleArray } from './shared/utils';
+import { fileURLToPath } from 'url';
 
 const users = excelUtility.getAccounts();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function createUserThread(user: TAccountData) {
     return new Promise((resolve, reject) => {
