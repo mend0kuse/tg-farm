@@ -316,7 +316,7 @@ export class Xrum {
             if (checkType === 'username') {
                 await sleep(random(5, 10));
                 await telegramApi.updateProfile(this.telegramClient, {
-                    firstName: this.fullProfile.firstName + ' ' + checkData,
+                    firstName: this.fullProfile.profile.firstName + ' ' + checkData,
                 });
             }
         }
