@@ -7,6 +7,7 @@
         "acc:make": "npx tsx ./src/scripts/accounts-generator.ts",
         "acc:update": "npx tsx ./src/scripts/update-session.ts",
         "acc:check": "npx tsx ./src/scripts/check-session.ts",
+        "acc:nicknames": "npx tsx ./src/scripts/update-nicknames.ts",
         "launch": "npx tsx ./src/launcher.ts",
         "build": "tsc",
         "start": "node --experimental-specifier-resolution=node dist/launcher.js",
