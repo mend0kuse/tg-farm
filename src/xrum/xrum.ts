@@ -136,7 +136,7 @@ export class Xrum {
                 this.openCookie,
                 this.completeAvailableQuests,
                 this.connectWallet,
-                this.sendTransaction,
+                // this.sendTransaction,
                 this.claimCompleted,
             ];
 

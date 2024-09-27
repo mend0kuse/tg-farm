@@ -1,8 +1,7 @@
 import { RestClientV2 } from 'bitget-api';
 import { APP_CONFIG } from '../../config';
-import { BaseLogger, baseLogger } from '../logger';
+import { BaseLogger } from '../logger';
 import { TOKEN, CHAIN } from '../tokens';
-import { Logger } from '@mtcute/node/utils.js';
 
 export class BitgetApi {
     private client = new RestClientV2({
@@ -26,6 +25,8 @@ export class BitgetApi {
         amount: string;
     }) {
         for (const address of addresses) {
+            this.logger.log(`Начало отправки на адрес ${address}`);
+
             try {
                 const response = await this.client.spotWithdraw({
                     transferType: 'on_chain',

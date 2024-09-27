@@ -8,4 +8,5 @@ services:
             - '9999:9999'
         volumes:
             - ./db:/app/db
+            - ./sessions:/app/sessions
         command: npm start

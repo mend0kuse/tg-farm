@@ -22,7 +22,6 @@ export class XEmpire {
     private fullProfile: any = null;
     private mnemonic;
     private index;
-    private peer: null | tl.TypeInputPeer = null;
     private refCode;
     private logger;
     private externalData: {
@@ -732,29 +731,22 @@ export class XEmpire {
     }
 
     async getWebAppDataUrl() {
-        if (!this.peer) {
-            this.peer = await this.telegramClient.resolvePeer('empirebot');
-        }
+        const peer = await this.telegramClient.resolvePeer('muskempire_bot');
 
-        try {
-            const response = await this.telegramClient.call({
-                _: 'messages.requestAppWebView',
-                peer: this.peer,
-                app: {
-                    _: 'inputBotAppShortName',
-                    botId: toInputUser(this.peer),
-                    shortName: 'game',
-                },
-                platform: 'Android',
-                startParam: this.refCode,
-                writeAllowed: true,
-            });
+        const response = await this.telegramClient.call({
+            _: 'messages.requestAppWebView',
+            peer,
+            app: {
+                _: 'inputBotAppShortName',
+                botId: toInputUser(peer),
+                shortName: 'game',
+            },
+            platform: 'Android',
+            startParam: this.refCode,
+            writeAllowed: true,
+        });
 
-            return response.url;
-        } catch (error) {
-            this.peer = null;
-            throw error;
-        }
+        return response.url;
     }
 
     /**
