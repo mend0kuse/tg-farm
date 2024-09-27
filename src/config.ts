@@ -35,4 +35,9 @@ export const APP_CONFIG = {
     // ---- MONGO ----
 
     MONGO_DB_URL: process.env.MONGO_DB_URL ?? '',
+
+    // ---- BITGET ----
+    BITGET_KEY: process.env.BITGET_KEY ?? '',
+    BITGET_SECRET: process.env.BITGET_SECRET ?? '',
+    BITGET_PASSPHRASE: process.env.BITGET_PASSPHRASE ?? '',
 };

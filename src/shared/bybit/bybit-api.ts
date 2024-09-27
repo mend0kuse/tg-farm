@@ -1,6 +1,6 @@
 import { GetAssetInfoParamsV5, GetWalletBalanceParamsV5, RestClientV5, WithdrawParamsV5 } from 'bybit-api';
 import { APP_CONFIG } from '../../config';
-import { baseLogger } from '../logger';
+import { BaseLogger } from '../logger';
 import { TOKEN, CHAIN } from '../tokens';
 
 export class ByBitApi {
@@ -9,6 +9,8 @@ export class ByBitApi {
         key: APP_CONFIG.BYBIT_KEY,
         secret: APP_CONFIG.BYBIT_SECRET,
     });
+
+    private logger = new BaseLogger('BYBIT');
 
     async withdrawToken({
         addresses,
@@ -32,15 +34,13 @@ export class ByBitApi {
                     timestamp,
                 });
 
-                console.log(response);
-
                 if (response.retMsg !== 'success') {
                     throw new Error(response.retMsg);
                 }
 
-                baseLogger.log(`Результат отправки ${token} на адрес ${address}: `, response.retMsg);
+                this.logger.log(`Результат отправки ${token} на адрес ${address}: `, response.retMsg);
             } catch (error) {
-                baseLogger.error(`Ошибка отправки ${token} на адрес ${address}`, error);
+                this.logger.error(`Ошибка отправки ${token} на адрес ${address}`, error);
             }
         }
     }
