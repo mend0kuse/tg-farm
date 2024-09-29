@@ -8,6 +8,11 @@ import { parseSocks5Proxy, random, sleep } from '../shared/utils';
 
     for (const user of users) {
         try {
+            if (!user.proxy) {
+                baseLogger.error(`Не найден прокси для сессии ${user.index}`);
+                process.exit(1);
+            }
+
             const { telegramClient } = await telegramApi.createClientBySession({
                 proxy: parseSocks5Proxy(user.proxy),
                 sessionName: user.index.toString(),

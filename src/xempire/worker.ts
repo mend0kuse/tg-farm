@@ -45,7 +45,6 @@ export const runEmpireWorker = async (user: TAccountData) => {
         const { telegramClient } = await telegramApi.createClientBySession({
             proxy: parseSocks5Proxy(user.proxy),
             sessionName: user.index.toString(),
-            session: user.session,
         });
 
         baseLogger.log(`[X_${user.index}] Телеграм клиент успешно создан`);

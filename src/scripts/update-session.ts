@@ -47,13 +47,18 @@ const updateSessionExcel = (session: string) => {
 (async () => {
     const accounts = excelUtility.getAccounts();
 
-    const proxy = accounts.find((acc) => acc.index === Number(sessionName))?.proxy;
+    const { proxy } = accounts.find((acc) => acc.index === Number(sessionName))!;
 
     deleteOldFiles();
 
+    if (!proxy) {
+        baseLogger.error(`Не найден прокси для сессии ${sessionName}`);
+        process.exit(1);
+    }
+
     const { sessionResult, telegramClient } = await telegramApi.createClientBySession({
         sessionName,
-        proxy: parseSocks5Proxy(proxy ?? ''),
+        proxy: parseSocks5Proxy(proxy),
     });
 
     updateSessionExcel(sessionResult);

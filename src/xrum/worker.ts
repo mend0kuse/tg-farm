@@ -49,7 +49,6 @@ export const runHrumWorker = async (user: TAccountData) => {
         }
 
         const { telegramClient } = await telegramApi.createClientBySession({
-            session: user.session,
             proxy: parseSocks5Proxy(user.proxy),
             sessionName: user.index.toString(),
         });
