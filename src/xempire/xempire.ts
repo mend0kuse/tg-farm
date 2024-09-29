@@ -10,7 +10,7 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 import { TelegramClient, tl } from '@mtcute/node';
 import { toInputUser } from '@mtcute/node/utils.js';
 import { telegramApi } from '../shared/telegram/telegram-api';
-import { XEmpireDatabase } from './database';
+import { XEmpireDatabase, xEmpireDatabase } from './database';
 
 export class XEmpire {
     private API_URL = 'https://api.xempire.io';
@@ -22,6 +22,7 @@ export class XEmpire {
     private fullProfile: any = null;
     private mnemonic;
     private index;
+    private isCreated: boolean = false;
     private refCode;
     private logger;
     private externalData: {
@@ -37,6 +38,7 @@ export class XEmpire {
         refCode,
         index,
         database,
+        isCreated,
     }: {
         proxy?: string;
         ua: string;
@@ -45,6 +47,7 @@ export class XEmpire {
         refCode: string;
         database: XEmpireDatabase;
         index: number;
+        isCreated: boolean;
     }) {
         this.logger = new BaseLogger(`X_${index}`);
 
@@ -53,6 +56,7 @@ export class XEmpire {
         this.refCode = refCode;
         this.database = database;
         this.index = index;
+        this.isCreated = isCreated;
 
         const agent = proxy ? new SocksProxyAgent(proxy) : undefined;
         this.api = axios.create({
@@ -143,6 +147,18 @@ export class XEmpire {
             this.fullProfile = await this.getProfile();
             if (!this.fullProfile) continue mainLoop;
 
+            if (!this.isCreated) {
+                try {
+                    xEmpireDatabase.createAccount({
+                        index: this.index,
+                        level: this.level,
+                        refCode: '',
+                    });
+                } catch (error) {
+                    this.logger.error(error);
+                }
+            }
+
             await sleep(random(1, 2));
 
             await this.claimOfflineBonus();
@@ -184,9 +200,7 @@ export class XEmpire {
             }
 
             try {
-                if (this.level) {
-                    this.database.updateLevelByIndex(this.index, this.level);
-                }
+                this.database.updateLevelByIndex(this.index, this.level ?? 1);
             } catch (error) {
                 this.logger.error('Ошибка обновления базы данных', error);
             }

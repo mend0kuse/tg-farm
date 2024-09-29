@@ -16,7 +16,7 @@ const [, , index] = process.argv;
             continue;
         }
 
-        await sleep(random(5, 10));
+        await sleep(random(1, 2));
 
         try {
             const balance = await tonUtility.getBalanceByMnemonic(acc.mnemonicTon.split(' '));

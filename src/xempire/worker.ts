@@ -1,4 +1,7 @@
+import { APP_CONFIG } from '../config';
+import { REFERRAL_MAP_2 } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
+import { excelUtility } from '../shared/excel/excel';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { parseSocks5Proxy, sleep, random } from '../shared/utils';
@@ -6,20 +9,32 @@ import { xEmpireDatabase } from './database';
 import { XEmpire } from './xempire';
 
 export const runEmpireWorker = async (user: TAccountData) => {
+    const accounts = excelUtility.getAccounts();
+
     let cycle = 1;
 
     xEmpireDatabase.init();
 
-    try {
-        const savedAccount = await xEmpireDatabase.findByIndex(Number(user.index));
-        if (!savedAccount) {
-            xEmpireDatabase.createAccount({ index: user.index, refCode: `hero${user.id}`, level: 1 });
-            baseLogger.log(`EMPIRE ${user.index} успешно добавлен в базу.`);
-        } else {
-            baseLogger.log(`EMPIRE ${user.index} загружен из базы.}`);
+    const refererIndex = REFERRAL_MAP_2[user.index];
+    let refCode = `hero${APP_CONFIG.MASTER_USER_ID}`;
+    let isCreated = false;
+
+    while (true) {
+        const myAccount = await xEmpireDatabase.findByIndex(user.index);
+        if (myAccount) {
+            isCreated = true;
+            break;
         }
-    } catch (error) {
-        baseLogger.error(error);
+
+        const refererAccount: any = await xEmpireDatabase.findByIndex(refererIndex);
+        if (refererAccount) {
+            const { id } = accounts.find((acc) => acc.index === refererIndex)!;
+            refCode = `hero${id}`;
+            break;
+        }
+
+        baseLogger.accentLog(`[XRUM_${user.index}] В базе не найден аккаунт referer. Задержка 5 минут...`);
+        await sleep(60 * 5);
     }
 
     while (cycle < 6) {
@@ -39,7 +54,8 @@ export const runEmpireWorker = async (user: TAccountData) => {
                 proxy: user.proxy,
                 mnemonic: user.mnemonicTon,
                 database: xEmpireDatabase,
-                refCode: ``,
+                refCode,
+                isCreated,
             }).start();
         } catch (error) {
             baseLogger.error(error);

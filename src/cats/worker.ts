@@ -1,4 +1,4 @@
-import { REFERRAL_MAP } from '../constants';
+import { REFERRAL_MAP_2 } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
@@ -15,18 +15,9 @@ export const runCatsWorker = async (user: TAccountData) => {
         baseLogger.error(error);
     }
 
-    const refererIndex = REFERRAL_MAP[user.index];
+    const refererIndex = REFERRAL_MAP_2[user.index];
     let refCode = 'SfBw9snEPstwWptCAwjrV';
     let isCreated = false;
-
-    try {
-        const myAccount = await catsDatabase.findByIndex(user.index);
-        if (myAccount) {
-            isCreated = true;
-        }
-    } catch (error) {
-        baseLogger.error(`CATS_${user.index}`, error);
-    }
 
     while (errors < 5) {
         while (true) {

@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '../config';
-import { REFERRAL_MAP } from '../constants';
+import { REFERRAL_MAP_2 } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
 import { excelUtility } from '../shared/excel/excel';
 import { baseLogger } from '../shared/logger';
@@ -13,7 +13,7 @@ export const runHrumWorker = async (user: TAccountData) => {
 
     let errors = 0;
 
-    const refererIndex = REFERRAL_MAP[user.index];
+    const refererIndex = REFERRAL_MAP_2[user.index];
     let refCode = `ref${APP_CONFIG.MASTER_USER_ID}`;
     let isCreated = false;
 
@@ -33,7 +33,7 @@ export const runHrumWorker = async (user: TAccountData) => {
 
             const refererAccount: any = await xrumDatabase.findByIndex(refererIndex);
             if (refererAccount) {
-                const id = accounts.find((acc) => acc.index === refererIndex)!;
+                const { id } = accounts.find((acc) => acc.index === refererIndex)!;
                 refCode = `ref${id}`;
                 break;
             }
