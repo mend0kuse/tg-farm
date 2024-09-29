@@ -31,6 +31,10 @@ export const runHrumWorker = async (user: TAccountData) => {
                 break;
             }
 
+            if (refererIndex === 1) {
+                break;
+            }
+
             const refererAccount: any = await xrumDatabase.findByIndex(refererIndex);
             if (refererAccount) {
                 const { id } = accounts.find((acc) => acc.index === refererIndex)!;
@@ -38,7 +42,9 @@ export const runHrumWorker = async (user: TAccountData) => {
                 break;
             }
 
-            baseLogger.accentLog(`[XRUM_${user.index}] В базе не найден аккаунт referer. Задержка 5 минут...`);
+            baseLogger.accentLog(
+                `[XRUM_${user.index}] В базе не найден аккаунт referer ${refererIndex}. Задержка 5 минут...`
+            );
             await sleep(60 * 5);
         }
 

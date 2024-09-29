@@ -26,6 +26,10 @@ export const runEmpireWorker = async (user: TAccountData) => {
             break;
         }
 
+        if (refererIndex === 1) {
+            break;
+        }
+
         const refererAccount: any = await xEmpireDatabase.findByIndex(refererIndex);
         if (refererAccount) {
             const { id } = accounts.find((acc) => acc.index === refererIndex)!;
