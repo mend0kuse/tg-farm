@@ -154,6 +154,7 @@ export class XEmpire {
                         level: this.level,
                         refCode: '',
                     });
+                    this.isCreated = true;
                 } catch (error) {
                     this.logger.error(error);
                 }
