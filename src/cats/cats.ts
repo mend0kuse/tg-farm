@@ -202,6 +202,7 @@ export class Cats {
         this.logger.log('Прохождение заданий');
 
         try {
+            let isFlooded = false;
             const catsTasks = await this.getCatsTasks();
 
             for (const task of catsTasks) {
@@ -251,7 +252,7 @@ export class Cats {
                     }
                 }
 
-                if (type === 'SUBSCRIBE_TO_CHANNEL') {
+                if (type === 'SUBSCRIBE_TO_CHANNEL' && !isFlooded) {
                     try {
                         const channelName = await this.getChannelNameFromUniqueLink(task.params.channelUrl);
                         if (!channelName) {
@@ -269,6 +270,15 @@ export class Cats {
 
                         this.logger.log('Успешно выполнено задание: ', title);
                     } catch (error) {
+                        if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                            await sleep(error.seconds * 2);
+                            await telegramApi.sendBotNotification(
+                                `[CATS_${this.account.index}], Флуд на вступление в канал`
+                            );
+
+                            isFlooded = true;
+                        }
+
                         this.logger.error('Ошибка при подключении к каналу: ', title, this.handleError(error));
                     }
                 }

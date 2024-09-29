@@ -285,18 +285,29 @@ export class Xrum {
             (quest: any) => !this.fullProfile.quests.find((q: any) => q.key === quest.key)
         );
 
+        let isFlooded = false;
+
         for (const { isArchived, checkType, key, checkData } of actualDbQuests) {
             if (isArchived) {
                 continue;
             }
 
-            if (checkType === 'telegramChannel') {
+            if (checkType === 'telegramChannel' && !isFlooded) {
                 await sleep(random(5, 10));
 
                 try {
                     await telegramApi.joinChannel(this.telegramClient, checkData);
                     this.logger.log(`Вступление в канал ${checkData} успешно`);
                 } catch (error) {
+                    if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                        await telegramApi.sendBotNotification(
+                            `[XRUM_${this.account.index}], Флуд на вступление в канал`
+                        );
+                        await sleep(error.seconds * 2);
+                        isFlooded = true;
+                        continue;
+                    }
+
                     this.logger.error('Ошибка при вступлении в канал: ', this.handleError(error));
                 }
 

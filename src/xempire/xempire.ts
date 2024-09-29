@@ -532,18 +532,27 @@ export class XEmpire {
             (quest: any) => !this.fullProfile.quests.find((q: any) => q.key === quest.key)
         );
 
+        let isFlooded = false;
+
         for (const { isArchived, checkType, key, requiredLevel, checkData } of actualDbQuests) {
             if (requiredLevel > this.level || isArchived) {
                 continue;
             }
 
-            if (checkType === 'telegramChannel') {
+            if (checkType === 'telegramChannel' && !isFlooded) {
                 await sleep(random(2, 4));
 
                 try {
                     await telegramApi.joinChannel(this.telegramClient, checkData);
                     this.logger.log(`Вступление в канал ${checkData} успешно`);
                 } catch (error) {
+                    if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
+                        await sleep(error.seconds * 2);
+                        await telegramApi.sendBotNotification(`[X_${this.index}], Флуд на вступление в канал`);
+                        isFlooded = true;
+                        continue;
+                    }
+
                     this.logger.error('Ошибка при вступлении в канал: ', this.handleError(error));
                 }
 
