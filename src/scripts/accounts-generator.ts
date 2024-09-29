@@ -51,6 +51,7 @@ const createAccount = async (): Promise<TAccountData> => {
     const me = await telegramClient.getMe();
 
     const { mnemonic, address } = await tonUtility.createWallet();
+    await telegramClient.close();
 
     return {
         index: Number(index),

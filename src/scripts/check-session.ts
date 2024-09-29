@@ -28,8 +28,8 @@ const [, , sessionName] = process.argv;
 
             await telegramClient.close();
             baseLogger.log('Успешно ', user.index);
-        } catch {
-            baseLogger.error('Ошибка ', user.index);
+        } catch (err) {
+            baseLogger.error(`Ошибка ${user.index}`, err);
         }
     }
 
