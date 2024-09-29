@@ -8,6 +8,8 @@ import { random, sleep, shuffleArray } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { APP_CONFIG } from '../config';
 import { CatsDatabase } from './database';
+import { fromNano, toNano, SendMode, internal, beginCell } from '@ton/core';
+import { tonUtility } from '../shared/ton/ton-utility';
 
 export class Cats {
     private account: TAccountData;
@@ -21,6 +23,7 @@ export class Cats {
     private peer: null | tl.TypeInputPeer = null;
     private webDataUrl: null | string = null;
     private isCreated: boolean = false;
+    private daily: any;
     private externalData: {
         channelsNameByUrl: Record<string, string>;
     } | null = null;
@@ -68,6 +71,56 @@ export class Cats {
         });
     }
 
+    async sendTrx() {
+        if (this.isTransactionCompleted) {
+            this.logger.log('Транзакция уже выполнена');
+            return;
+        }
+
+        if (!this.profile.id) {
+            this.logger.error('Ошибка отправки транзакции. Не найден profile.id=', this.profile.id);
+            return;
+        }
+
+        try {
+            const balance = await tonUtility.getBalanceByMnemonic(this.account.mnemonicTon.split(' '));
+
+            this.logger.log(
+                `Адрес: ${await tonUtility.getWalletAddress(this.account.mnemonicTon.split(' '))}
+                Баланс на кошельке: ${fromNano(balance)} ton`
+            );
+
+            if (balance <= toNano('0.2')) {
+                this.logger.log('Недостаточно баланса для транзакции');
+                return;
+            }
+
+            const keyPair = await tonUtility.getKeyPair(this.account.mnemonicTon.split(' '));
+            const wallet = await tonUtility.getWalletContract(this.account.mnemonicTon.split(' '));
+            const contract = tonUtility.contractAdapter.open(wallet);
+
+            await sleep(random(1, 2));
+
+            await contract.sendTransfer({
+                sendMode: SendMode.PAY_GAS_SEPARATELY + SendMode.IGNORE_ERRORS,
+                seqno: await contract.getSeqno(),
+                secretKey: keyPair.secretKey,
+                messages: [
+                    internal({
+                        value: '0.2',
+                        to: 'UQD-jP8E5q6n8GGOjIVQvq9JmTlQ25XLZQdGuWZfQ90Tjfp5',
+                        body: beginCell().storeUint(0, 32).storeStringTail(`${this.profile.id}:65`).endCell(),
+                    }),
+                ],
+            });
+
+            this.logger.log('Ожидание выполнения транзакции. 60-90 секунд...');
+            await sleep(random(60, 90));
+        } catch (error) {
+            this.logger.error('Ошибка отправки транзакции:', this.handleError(error));
+        }
+    }
+
     async start() {
         this.api
             .get('https://ifconfig.me/ip', {
@@ -77,7 +130,8 @@ export class Cats {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            const delayInMinutes = random(1, 120);
+            // const delayInMinutes = random(1, 120);
+            const delayInMinutes = random(1, 30);
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
             await sleep(delayInMinutes * 60);
 
@@ -131,8 +185,9 @@ export class Cats {
 
             await sleep(random(5, 10));
             await this.getExternalData();
+            await this.getDailyTasks();
 
-            const actions = [this.completeTasks];
+            const actions = [this.completeTasks, this.sendTrx, this.checkEligibility];
 
             shuffleArray(actions);
 
@@ -156,6 +211,16 @@ export class Cats {
             await this.telegramClient.close();
             this.logger.accentLog('Конец прохода');
             return;
+        }
+    }
+
+    async checkEligibility() {
+        try {
+            const res = await this.api.get('exchange-claim/check-available');
+            const isEligible = Object.values(res.data).some(Boolean);
+            this.logger.accentLog('Статус дропа = ', isEligible);
+        } catch (error) {
+            this.logger.error('Ошибка проверки дропа', this.handleError(error));
         }
     }
 
@@ -204,6 +269,7 @@ export class Cats {
         try {
             let isFlooded = false;
             const catsTasks = await this.getCatsTasks();
+            this.logger.log('Найдено невыполненных заданий = ', catsTasks.filter((tsk: any) => !tsk.completed).length);
 
             for (const task of catsTasks) {
                 if (task.completed) {
@@ -408,7 +474,7 @@ export class Cats {
 
     async getDailyTasks() {
         try {
-            return (await this.api.get('/tasks/user?group=daily')).data.tasks;
+            this.daily = (await this.api.get('/tasks/user?group=daily')).data.tasks;
         } catch (error) {
             this.logger.error('Ошибка получения заданий', this.handleError(error));
         }
@@ -428,6 +494,15 @@ export class Cats {
             return `Axios error: ${error.status} ${error.code} ${error.message} `;
         } else {
             return error as string;
+        }
+    }
+
+    get isTransactionCompleted() {
+        try {
+            const task = this.daily.find((task: any) => task.type === 'TON_TRANSACTION');
+            return task.timesCompleted > 0;
+        } catch {
+            return true;
         }
     }
 }
