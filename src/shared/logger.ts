@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 export class BaseLogger {
     constructor(private prefix: string) {}
 
@@ -7,11 +9,11 @@ export class BaseLogger {
 
     accentLog(...message: any[]) {
         const res = `
-        ----------
-        ----------
-            ${this.makePrefix()} ${message.join(', ')}
-        ----------
-        ----------
+----------
+----------
+    ${this.makePrefix()} ${message.join(', ')}
+----------
+----------
         `;
 
         console.log(res);

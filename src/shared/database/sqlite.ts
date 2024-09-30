@@ -8,13 +8,11 @@ const __dirname = path.dirname(__filename);
 
 export class SQLite3Database {
     logger: BaseLogger;
-    dbFilePath: string;
     db: sqlite.Database;
 
     constructor(dbName: string) {
         this.logger = new BaseLogger(dbName.toUpperCase());
-        this.dbFilePath = path.resolve(__dirname, '..', '..', '..', 'db', `${dbName}.db`);
-        this.db = new sqlite(this.dbFilePath);
+        this.db = new sqlite(path.resolve(__dirname, '..', '..', '..', 'db', `${dbName}.db`));
     }
 
     close() {

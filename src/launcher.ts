@@ -21,10 +21,12 @@ async function createUserThread(user: TAccountData) {
             baseLogger.log('Worker msg:', msg);
             resolve(msg);
         });
+
         worker.on('error', (err) => {
             baseLogger.error('Worker error:', err);
             reject(err);
         });
+
         worker.on('exit', (code) => {
             reject(new Error(`Worker stopped with exit code ${code}`));
         });
@@ -36,8 +38,6 @@ async function start() {
         shuffleArray(users);
 
         await Promise.allSettled(users.map((user) => createUserThread(user)));
-
-        baseLogger.error('Выполнено: ', users.length);
     } catch (error) {
         baseLogger.error('Ошибка: ', error);
     }
