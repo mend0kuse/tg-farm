@@ -7,6 +7,7 @@ import { toInputUser } from '@mtcute/node/utils.js';
 import { random, sleep, shuffleArray, randomArrayItem, randomChance } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { PixelDatabase } from './database';
+import crypto from 'crypto';
 
 export class Pixel {
     private account: TAccountData;
@@ -358,13 +359,12 @@ export class Pixel {
         this.logger.log(`Старт рисования. Заряды =`, this.mining.charges);
 
         const colorStrategy = randomArrayItem(['random', 'same']);
-        const pixelStrategy = randomArrayItem(['near', 'same']);
         let color = randomArrayItem(this.COLORS);
         const firstPixelId = random(1, this.MAX_PIXEL_ID);
         let pixelId = firstPixelId;
 
-        const getPixelIsInvalidRange = () => {
-            return pixelId < 1 || pixelId > this.MAX_PIXEL_ID;
+        const getPixelInValidRange = () => {
+            return pixelId >= 1 && pixelId <= this.MAX_PIXEL_ID;
         };
 
         let charges = this.mining.charges;
@@ -375,14 +375,19 @@ export class Pixel {
                     color = randomArrayItem(this.COLORS);
                 }
 
-                if (pixelStrategy === 'near') {
-                    do {
-                        pixelId = random(firstPixelId - random(5, 10), firstPixelId + random(5, 10));
-                    } while (getPixelIsInvalidRange());
+                let attempts = 0;
+                while (attempts < 10) {
+                    pixelId = random(firstPixelId - random(5, 10), firstPixelId + random(5, 10));
+
+                    if (getPixelInValidRange()) {
+                        break;
+                    }
+
+                    attempts++;
                 }
 
-                if (pixelStrategy === 'random') {
-                    pixelId = random(1, this.MAX_PIXEL_ID);
+                if (attempts === 10) {
+                    pixelId = firstPixelId;
                 }
             }
 
