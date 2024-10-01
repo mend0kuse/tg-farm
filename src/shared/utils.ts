@@ -30,6 +30,12 @@ export const shuffleArray = (array: any[]) => {
     }
 };
 
+export const randomChance = (percentage: number) => {
+    const clampedPercentage = Math.max(0, Math.min(100, percentage));
+
+    return Math.random() * 100 < clampedPercentage;
+};
+
 export type TSocks5Proxy = {
     type: 'socks5';
     login: string;

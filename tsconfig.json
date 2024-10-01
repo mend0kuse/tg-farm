@@ -9,7 +9,7 @@
         "target": "es2017",
         "forceConsistentCasingInFileNames": true,
         "strict": true,
-        "strictPropertyInitialization": true,
+        "strictPropertyInitialization": false,
         "skipLibCheck": true,
         "outDir": "dist"
     },

@@ -11,7 +11,7 @@ export class PixelDatabase extends SQLite3Database {
                 `
             CREATE TABLE IF NOT EXISTS PixelAccount (
                 accountIndex INTEGER PRIMARY KEY,
-                tokens INTEGER,
+                league TEXT,
                 friends INTEGER
             )
         `
@@ -19,24 +19,24 @@ export class PixelDatabase extends SQLite3Database {
             .run();
     }
 
-    createAccount({ friends, index, tokens }: { index: number; tokens: number; friends: number }) {
+    createAccount({ friends, index, league }: { index: number; league: string; friends: number }) {
         return this.db
-            .prepare('INSERT INTO PixelAccount (accountIndex, tokens, friends) VALUES (?, ?, ?)')
-            .run(Object.values([index, tokens, friends]));
+            .prepare('INSERT INTO PixelAccount (accountIndex, league, friends) VALUES (?, ?, ?)')
+            .run(Object.values([index, league, friends]));
     }
 
     findByIndex(index: number) {
         return this.db.prepare('SELECT * FROM PixelAccount WHERE accountIndex = ?').get([index]);
     }
 
-    updateByIndex({ index, tokens, friends }: { index: number; tokens: number; friends: number }) {
+    updateByIndex({ index, league, friends }: { index: number; league: string; friends: number }) {
         return this.db
             .prepare(
                 `UPDATE PixelAccount 
-                 SET tokens = ?, friends = ?
+                 SET league = ?, friends = ?
                  WHERE accountIndex = ?`
             )
-            .run([tokens, friends, index]);
+            .run([league, friends, index]);
     }
 
     findAll() {
