@@ -21,7 +21,7 @@ export class PixelDatabase extends SQLite3Database {
 
     createAccount({ friends, index, tokens }: { index: number; tokens: number; friends: number }) {
         return this.db
-            .prepare('INSERT INTO PixelAccount (accountIndex, tokens, friends) VALUES (?, ?, ?, ?)')
+            .prepare('INSERT INTO PixelAccount (accountIndex, tokens, friends) VALUES (?, ?, ?)')
             .run(Object.values([index, tokens, friends]));
     }
 
