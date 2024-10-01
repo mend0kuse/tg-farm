@@ -9,6 +9,7 @@
         "acc:check-session": "npx tsx ./src/scripts/check-session.ts",
         "acc:nicknames": "npx tsx ./src/scripts/update-nicknames.ts",
         "acc:check-wallet": "npx tsx ./src/scripts/check-wallets.ts",
+        "acc:randomize-proxies": "npx tsx ./src/scripts/randomize-proxies.ts",
         "launch": "npx tsx ./src/launcher.ts",
         "build": "tsc",
         "start": "node --experimental-specifier-resolution=node dist/launcher.js",
