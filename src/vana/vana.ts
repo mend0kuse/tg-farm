@@ -13,7 +13,7 @@ export class Vana {
     private account: TAccountData;
     private database: VanaDatabase;
     private profile: any;
-    private refCode: string;
+    private refCode: number;
     private telegramClient: TelegramClient;
     private logger: BaseLogger;
     private api: AxiosInstance;
@@ -29,7 +29,7 @@ export class Vana {
         database,
     }: {
         account: TAccountData;
-        refCode: string;
+        refCode: number;
         telegramClient: TelegramClient;
         isCreated: boolean;
         database: VanaDatabase;
@@ -55,8 +55,7 @@ export class Vana {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            // const delayInMinutes = cycle === 1 ? random(1, 120) : randomArrayItem([1, 2, 3, 4, 5, 6, 7, 8]) * 60;
-            const delayInMinutes = cycle === 1 ? random(1, 2) : randomArrayItem([1, 2, 3, 4, 5, 6, 7, 8]) * 60;
+            const delayInMinutes = cycle === 1 ? random(1, 120) : randomArrayItem([1, 2, 3, 4, 5, 6, 7, 8]) * 60;
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
 
             await sleep(delayInMinutes * 60);
@@ -143,16 +142,16 @@ export class Vana {
         this.logger.log('Старт тапов');
 
         try {
-            let cycles = random(20, 40);
-            while (cycles > 0) {
+            let cycle = random(20, 40);
+            while (cycle > 0) {
                 await sleep(random(20, 30));
 
                 const points = random(5, 20);
 
                 await this.completeTask(1, points);
-                this.logger.log('Успешно отправлено = ', points);
+                this.logger.log(`Успешно отправлен круг ${cycle}. Очков = `, points);
 
-                cycles--;
+                cycle--;
             }
         } catch (error) {
             this.logger.error('Ошибка выполнения тапов', this.handleError(error));
@@ -218,6 +217,8 @@ export class Vana {
             await this.getProfile();
 
             this.logger.log('Успешный логин');
+
+            await this.completeRef();
         } catch (_error) {
             const error = _error as AxiosError;
             if (error.status === HttpStatusCode.NotFound) {
@@ -266,24 +267,35 @@ export class Vana {
 
     async createUser() {
         try {
-            const result = await this.api.post(`/player`);
-            this.profile = result.data;
+            try {
+                const result = await this.api.post(`/player`);
+                this.profile = result.data;
+            } catch (err) {
+                this.logger.error('Ошибка post player', this.handleError(err));
+            }
 
             await sleep(random(1, 2));
+            await this.completeRef();
+        } catch (error) {
+            this.logger.error('Ошибка создания пользователя', this.handleError(error));
+            throw error;
+        }
+    }
 
+    async completeRef() {
+        try {
             await this.api.post('/tasks/2', {
                 status: 'completed',
                 data: {
-                    referredUsername: this.profile.tgUsername,
-                    referredPlayerId: this.profile.id,
+                    referredUsername: this.account.username,
+                    referredPlayerId: this.account.id,
                     referredBy: this.refCode,
                 },
             });
 
-            this.logger.log('Пользователь зареган успешно');
+            this.logger.log('Задание за реферала выполнено');
         } catch (error) {
-            this.logger.error('Ошибка создания пользователя', this.handleError(error));
-            throw error;
+            this.logger.error('Ошибка выполнения реферального задания', this.handleError(error));
         }
     }
 
@@ -312,7 +324,7 @@ export class Vana {
 
             this.logger.log('Успешно выполнено задание ', id);
         } catch (error) {
-            this.logger.error('Ошибка выполнения задания', this.handleError(error));
+            this.logger.error('Ошибка выполнения задания', id, this.handleError(error));
         }
     }
 
@@ -328,7 +340,7 @@ export class Vana {
                 shortName: 'VanaDataHero',
             },
             platform: 'Android',
-            startParam: this.refCode,
+            startParam: this.refCode.toString(),
             writeAllowed: true,
         });
 
