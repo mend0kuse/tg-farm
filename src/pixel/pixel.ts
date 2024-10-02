@@ -407,12 +407,16 @@ export class Pixel {
         const peer = await this.telegramClient.resolvePeer('notpixel');
 
         const response = await this.telegramClient.call({
-            _: 'messages.requestWebView',
+            _: 'messages.requestAppWebView',
             peer,
-            bot: toInputUser(peer),
+            app: {
+                _: 'inputBotAppShortName',
+                botId: toInputUser(peer),
+                shortName: 'app',
+            },
             platform: 'Android',
             startParam: this.refCode,
-            url: `https://notpx.app`,
+            writeAllowed: true,
         });
 
         return response.url;
@@ -430,6 +434,7 @@ export class Pixel {
                 shortName: 'squads',
             },
             platform: 'Android',
+            writeAllowed: true,
         });
 
         return response.url;
