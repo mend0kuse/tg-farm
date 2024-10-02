@@ -1,14 +1,15 @@
+import { TelegramClient } from '@mtcute/node';
 import { APP_CONFIG } from '../config';
 import { REFERRAL_MAP } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
 import { excelUtility } from '../shared/excel/excel';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
-import { parseSocks5Proxy, random, sleep } from '../shared/utils';
+import { random, sleep } from '../shared/utils';
 import { pixelDatabase } from './database';
 import { Pixel } from './pixel';
 
-export const runPixelWorker = async (user: TAccountData) => {
+export const runPixelWorker = async (user: TAccountData, telegramClient: TelegramClient) => {
     const accounts = excelUtility.getAccounts();
 
     let errors = 0;
@@ -43,13 +44,6 @@ export const runPixelWorker = async (user: TAccountData) => {
             );
             await sleep(60 * 5);
         }
-
-        const { telegramClient } = await telegramApi.createClientBySession({
-            proxy: parseSocks5Proxy(user.proxy),
-            sessionName: user.index.toString(),
-        });
-
-        baseLogger.log(`[PIXEL_${user.index}] Телеграм клиент успешно создан`);
 
         try {
             await new Pixel({

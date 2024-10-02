@@ -1,14 +1,15 @@
+import { TelegramClient } from '@mtcute/node';
 import { APP_CONFIG } from '../config';
 import { REFERRAL_MAP_2 } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
 import { excelUtility } from '../shared/excel/excel';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
-import { parseSocks5Proxy, random, sleep } from '../shared/utils';
+import { random, sleep } from '../shared/utils';
 import { xrumDatabase } from './database';
 import { Xrum } from './xrum';
 
-export const runHrumWorker = async (user: TAccountData) => {
+export const runHrumWorker = async (user: TAccountData, telegramClient: TelegramClient) => {
     const accounts = excelUtility.getAccounts();
 
     let errors = 0;
@@ -48,11 +49,6 @@ export const runHrumWorker = async (user: TAccountData) => {
             await sleep(60 * 5);
         }
 
-        const { telegramClient } = await telegramApi.createClientBySession({
-            proxy: parseSocks5Proxy(user.proxy),
-            sessionName: user.index.toString(),
-        });
-
         baseLogger.log(`[XRUM_${user.index}] Телеграм клиент успешно создан`);
 
         try {
@@ -66,7 +62,6 @@ export const runHrumWorker = async (user: TAccountData) => {
 
             await hrum.start();
             const delay = hrum.secondsUntilUTCHour(random(7, 9));
-            await telegramClient.close();
             baseLogger.log('[HRUM] Применена задержка до следующего круга. Часов ', delay / 60 / 60);
             await sleep(delay);
         } catch (error) {

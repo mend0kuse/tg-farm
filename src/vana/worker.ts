@@ -3,12 +3,13 @@ import { REFERRAL_MAP } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
-import { parseSocks5Proxy, random, sleep } from '../shared/utils';
+import { random, sleep } from '../shared/utils';
 import { Vana } from './vana';
 import { excelUtility } from '../shared/excel/excel';
 import { vanaDatabase } from './database';
+import { TelegramClient } from '@mtcute/node';
 
-export const runVanaWorker = async (account: TAccountData) => {
+export const runVanaWorker = async (account: TAccountData, telegramClient: TelegramClient) => {
     const accounts = excelUtility.getAccounts();
 
     let errors = 0;
@@ -44,14 +45,7 @@ export const runVanaWorker = async (account: TAccountData) => {
             await sleep(60 * 5);
         }
 
-        const { telegramClient } = await telegramApi.createClientBySession({
-            proxy: parseSocks5Proxy(account.proxy),
-            sessionName: account.index.toString(),
-        });
-
         try {
-            baseLogger.log(`[VANA_${account.index}] Старт воркера`);
-
             await new Vana({
                 telegramClient,
                 account,

@@ -208,7 +208,6 @@ export class Cats {
                 this.logger.error('Ошибка обновления токенов:', error);
             }
 
-            await this.telegramClient.close();
             this.logger.accentLog('Конец прохода');
             return;
         }
