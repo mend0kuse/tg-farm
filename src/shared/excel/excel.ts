@@ -45,6 +45,15 @@ export class ExcelUtility {
 
         return users;
     }
+
+    getAccountByIndex(index: number) {
+        const acc = this.getAccounts().find((acc) => acc.index === index);
+        if (!acc) {
+            throw new Error(`Аккаунт ${index} не найден`);
+        }
+
+        return acc;
+    }
 }
 
 export const excelUtility = new ExcelUtility();
