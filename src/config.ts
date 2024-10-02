@@ -19,7 +19,7 @@ export const APP_CONFIG = {
 
     // ---- NOTIFICATIONS ----
 
-    MASTER_USER_ID: process.env.MASTER_USER_ID,
+    MASTER_USER_ID: process.env.MASTER_USER_ID ?? '',
     NOTIFICATION_BOT_TOKEN: process.env.NOTIFICATION_BOT_TOKEN,
 
     // ---- BYBIT ----
