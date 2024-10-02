@@ -12,7 +12,7 @@ export class VanaDatabase extends SQLite3Database {
             CREATE TABLE IF NOT EXISTS VanaAccount (
                 accountIndex INTEGER PRIMARY KEY,
                 tokens INTEGER,
-                friends INTEGER,
+                friends INTEGER
             )
         `
             )
