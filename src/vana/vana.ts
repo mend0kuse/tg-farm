@@ -7,6 +7,7 @@ import { toInputUser } from '@mtcute/node/utils.js';
 import { random, sleep, shuffleArray, randomArrayItem, randomChance } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { VanaDatabase } from './database';
+import { tonUtility } from '../shared/ton/ton-utility';
 
 export class Vana {
     private account: TAccountData;
@@ -54,7 +55,8 @@ export class Vana {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            const delayInMinutes = cycle === 1 ? random(1, 120) : randomArrayItem([1, 2, 3, 4, 5, 6, 7, 8]) * 60;
+            // const delayInMinutes = cycle === 1 ? random(1, 120) : randomArrayItem([1, 2, 3, 4, 5, 6, 7, 8]) * 60;
+            const delayInMinutes = cycle === 1 ? random(1, 2) : randomArrayItem([1, 2, 3, 4, 5, 6, 7, 8]) * 60;
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
 
             await sleep(delayInMinutes * 60);
@@ -138,13 +140,18 @@ export class Vana {
     async completeTaps() {
         await this.sendPageView('home');
 
+        this.logger.log('Старт тапов');
+
         try {
             let cycles = random(20, 40);
             while (cycles > 0) {
                 await sleep(random(20, 30));
 
                 const points = random(5, 20);
+
                 await this.completeTask(1, points);
+                this.logger.log('Успешно отправлено = ', points);
+
                 cycles--;
             }
         } catch (error) {
@@ -152,8 +159,34 @@ export class Vana {
         }
     }
 
+    async updateProfile(data: any) {
+        try {
+            await this.api.patch('/player/7311867778', data);
+        } catch (error) {
+            this.logger.error('Ошибка обновления профиля', this.handleError(error));
+        }
+    }
+
+    async connectTonWallet() {
+        this.logger.log('Подключение ton кошелька');
+
+        try {
+            await this.updateProfile({
+                tgWalletAddress: (
+                    await tonUtility.getWalletContract(this.account.mnemonicTon.split(' '))
+                ).address.toRawString(),
+            });
+
+            await this.completeTask(5, 500);
+        } catch (error) {
+            this.logger.error('Ошибка подключения ton кошелька', this.handleError(error));
+        }
+    }
+
     async sendPageView(page: string) {
-        this.api.post(
+        this.logger.log('Отправка view', page);
+
+        await this.api.post(
             'https://www.vanadatahero.com/_vercel/insights/view',
             {
                 o: `https://www.vanadatahero.com/${page}`,
@@ -210,14 +243,18 @@ export class Vana {
             const { tasks } = (await this.api.get('/tasks')).data;
             this.friends = tasks[1].completed.length ?? 0;
 
-            for (const task of tasks) {
-                if (task.completed.length > 0) {
+            for (const { completed, claimType, id, points, name } of tasks) {
+                if (completed.length > 0) {
                     continue;
                 }
 
-                if (task.claimType === 'immediate') {
+                if (claimType === 'immediate' || claimType === 'external') {
                     await sleep(random(5, 10));
-                    await this.completeTask(task.id, task.points);
+                    await this.completeTask(id, points);
+                }
+
+                if (name === 'Connect Telegram Wallet') {
+                    await this.connectTonWallet();
                 }
 
                 // todo complete other tasks
@@ -272,6 +309,8 @@ export class Vana {
                 points,
                 status: 'completed',
             });
+
+            this.logger.log('Успешно выполнено задание ', id);
         } catch (error) {
             this.logger.error('Ошибка выполнения задания', this.handleError(error));
         }
