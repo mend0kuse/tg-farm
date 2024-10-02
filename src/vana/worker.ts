@@ -16,7 +16,7 @@ export const runVanaWorker = async (account: TAccountData) => {
     vanaDatabase.init();
 
     const refererIndex = REFERRAL_MAP[account.index];
-    let refCode = APP_CONFIG.MASTER_USER_ID;
+    let refCode = Number(APP_CONFIG.MASTER_USER_ID);
     let isCreated = false;
 
     while (errors < 5) {
@@ -34,7 +34,7 @@ export const runVanaWorker = async (account: TAccountData) => {
             const refererAccount: any = await vanaDatabase.findByIndex(refererIndex);
             if (refererAccount) {
                 const { id } = accounts.find((acc) => acc.index === refererAccount.accountIndex)!;
-                refCode = id.toString();
+                refCode = id;
                 break;
             }
 
