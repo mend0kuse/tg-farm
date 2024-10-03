@@ -280,6 +280,7 @@ export class Cats {
                 const title = task.title;
                 const type:
                     | 'SUBSCRIBE_TO_CHANNEL'
+                    | 'YOUTUBE_WATCH'
                     | 'OPEN_LINK'
                     | 'NICKNAME_CHANGE'
                     | 'ACTIVITY_CHALLENGE'
@@ -344,6 +345,26 @@ export class Cats {
                         }
 
                         this.logger.error('Ошибка при подключении к каналу: ', title, this.handleError(error));
+                    }
+                }
+
+                if (type === 'YOUTUBE_WATCH') {
+                    try {
+                        const founded = this.externalData?.channelsNameByUrl[task.params.videoUrl] ?? '';
+                        if (!founded && this.externalData?.channelsNameByUrl) {
+                            await telegramApi.sendBotNotification(
+                                `[CATS_${this.account.index}] Нужен код для канала: ` + task.params.videoUrl
+                            );
+                        }
+
+                        const isCompleted = await this.completeTask(id, title, founded);
+                        if (!isCompleted) {
+                            throw new Error('Не удалось проверить задание');
+                        }
+
+                        this.logger.log('Успешно выполнено задание: ', title);
+                    } catch (error) {
+                        this.logger.error('Ошибка выполнения youtube', title, this.handleError(error));
                     }
                 }
             }
@@ -417,9 +438,15 @@ export class Cats {
         }
     }
 
-    async completeTask(id: string | number, title?: string) {
+    async completeTask(id: string | number, title?: string, answer = '') {
+        let url = `tasks/${id}/complete`;
+
+        if (answer) {
+            url += `?answer=${answer}`;
+        }
+
         try {
-            const result = await this.api.post(`tasks/${id}/complete`, {});
+            const result = await this.api.post(url, {});
             if (!result.data.success) {
                 throw new Error('Ошибка при выполнении');
             }
