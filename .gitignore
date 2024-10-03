@@ -7,5 +7,5 @@ proxies.txt
 dist
 roadmap.txt
 test.ts
-*.bash
+helper.bash
 /db

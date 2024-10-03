@@ -20,12 +20,14 @@ const user = workerData as TAccountData;
             sessionName: user.index.toString(),
         });
 
+        // Чтобы выключить бота - закомментируйте или удалите строчку
+
         await Promise.allSettled([
-            runHrumWorker(user, telegramClient),
-            runPixelWorker(user, telegramClient),
-            runEmpireWorker(user, telegramClient),
-            runCatsWorker(user, telegramClient),
-            runVanaWorker(user, telegramClient),
+            runHrumWorker(user, telegramClient), // xrum
+            runPixelWorker(user, telegramClient), // not pixel
+            runEmpireWorker(user, telegramClient), // xempire
+            runCatsWorker(user, telegramClient), // cats
+            runVanaWorker(user, telegramClient), // vana
         ]);
     } catch (error) {
         baseLogger.error(`Ошибка воркера ${user.index}:`, error);
