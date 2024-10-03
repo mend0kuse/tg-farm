@@ -107,7 +107,7 @@ export class Vana {
 
             await sleep(random(5, 10));
 
-            const actions = [this.completeTasks, this.completeTaps, this.sendLeaderBoard, this.sendInvite];
+            const actions = [this.completeTasks, this.sendLeaderBoard, this.sendInvite];
 
             shuffleArray(actions);
 
