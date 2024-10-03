@@ -99,6 +99,8 @@ export const REFERRAL_MAP: Record<number, number> = {
     105: 104,
     106: 105,
     107: 106,
+    108: 106,
+    109: 2,
 };
 
 export const REFERRAL_MAP_2: Record<number, number> = {

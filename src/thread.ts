@@ -14,16 +14,21 @@ const user = workerData as TAccountData;
 (async () => {
     baseLogger.log(`Воркер ${user.index} Старт`);
 
-    const { telegramClient } = await telegramApi.createClientBySession({
-        proxy: parseSocks5Proxy(user.proxy),
-        sessionName: user.index.toString(),
-    });
+    try {
+        const { telegramClient } = await telegramApi.createClientBySession({
+            proxy: parseSocks5Proxy(user.proxy),
+            sessionName: user.index.toString(),
+        });
 
-    await Promise.allSettled([
-        runHrumWorker(user, telegramClient),
-        runPixelWorker(user, telegramClient),
-        runEmpireWorker(user, telegramClient),
-        runCatsWorker(user, telegramClient),
-        runVanaWorker(user, telegramClient),
-    ]);
+        await Promise.allSettled([
+            runHrumWorker(user, telegramClient),
+            runPixelWorker(user, telegramClient),
+            runEmpireWorker(user, telegramClient),
+            runCatsWorker(user, telegramClient),
+            runVanaWorker(user, telegramClient),
+        ]);
+    } catch (error) {
+        baseLogger.error(`Ошибка воркера ${user.index}:`, error);
+        await telegramApi.sendBotNotification(`Не удалось создать телеграм клиент ${user.index}. ${error}`);
+    }
 })();
