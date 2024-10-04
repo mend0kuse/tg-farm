@@ -13,7 +13,7 @@ export const runEmpireWorker = async (user: TAccountData, telegramClient: Telegr
 
     // const refererIndex = REFERRAL_MAP_2[user.index];
     const refCode = ``;
-    const isCreated = false;
+    const isCreated = true;
 
     // while (true) {
     //     const myAccount = await xEmpireDatabase.findByIndex(user.index);

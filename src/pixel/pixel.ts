@@ -59,7 +59,8 @@ export class Pixel {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            const delayInMinutes = cycle === 1 ? random(1, 120) : randomArrayItem(this.DELAY_HOURS) * 60;
+            const randomHour = randomArrayItem(this.DELAY_HOURS);
+            const delayInMinutes = cycle === 1 ? random(1, 120) : random(randomHour - 0.5, randomHour + 0.5) * 60;
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
 
             await sleep(delayInMinutes * 60);
@@ -516,7 +517,7 @@ export class Pixel {
 
     // ---- HELPERS ----
 
-    private DELAY_HOURS = [1, 2, 3, 4, 5, 6, 7];
+    private DELAY_HOURS = [1, 2, 3, 7];
 
     private LEAGUES = ['bronze', 'silver', 'gold', 'platinum'];
 
