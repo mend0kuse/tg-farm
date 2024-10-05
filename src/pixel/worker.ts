@@ -1,6 +1,5 @@
 import { TelegramClient } from '@mtcute/node';
 import { APP_CONFIG } from '../config';
-import { REFERRAL_MAP } from '../constants';
 import { TAccountData } from '../scripts/accounts-generator';
 import { excelUtility } from '../shared/excel/excel';
 import { baseLogger } from '../shared/logger';
@@ -8,6 +7,7 @@ import { telegramApi } from '../shared/telegram/telegram-api';
 import { random, sleep } from '../shared/utils';
 import { pixelDatabase } from './database';
 import { Pixel } from './pixel';
+import { REFERRAL_MAP_PIXEL } from './ref';
 
 export const runPixelWorker = async (user: TAccountData, telegramClient: TelegramClient) => {
     const accounts = excelUtility.getAccounts();
@@ -16,7 +16,7 @@ export const runPixelWorker = async (user: TAccountData, telegramClient: Telegra
 
     pixelDatabase.init();
 
-    const refererIndex = REFERRAL_MAP[user.index];
+    const refererIndex = REFERRAL_MAP_PIXEL[user.index];
     let refCode = `f${APP_CONFIG.MASTER_USER_ID}`;
     let isCreated = false;
 
