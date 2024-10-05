@@ -165,7 +165,7 @@ export class Drops {
             this.logger.log('Успешный логин');
         } catch (_error) {
             const error = _error as AxiosError;
-            if (url && error.status === HttpStatusCode.Forbidden) {
+            if (url && (error.status === HttpStatusCode.Forbidden || error.status === HttpStatusCode.Unauthorized)) {
                 this.logger.log('Токена нет');
                 await this.sendLogin(url);
                 await this.getProfile();
@@ -323,9 +323,17 @@ export class Drops {
 
         try {
             const { user, jwt } = (
-                await this.api.post(`/auth/login`, {
-                    webAppData: telegramApi.extractWebAppData(tgUrl),
-                })
+                await this.api.post(
+                    `/auth/login`,
+                    {
+                        webAppData: telegramApi.extractWebAppData(tgUrl),
+                    },
+                    {
+                        headers: {
+                            Authorization: '',
+                        },
+                    }
+                )
             ).data;
 
             this.profile = user;
