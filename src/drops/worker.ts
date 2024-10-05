@@ -35,10 +35,10 @@ export const runDropsWorker = async (account: TAccountData, telegramClient: Tele
             }
 
             baseLogger.accentLog(
-                `[DROPS_${account.index}] В базе не найден код referer ${refererIndex}. Задержка 5 минут...`
+                `[DROPS_${account.index}] В базе не найден код referer ${refererIndex}. Задержка 2 часа...`
             );
 
-            await sleep(60 * 5);
+            await sleep(60 * 120);
         }
 
         try {

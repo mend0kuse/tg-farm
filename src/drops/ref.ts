@@ -9,7 +9,7 @@ export const REFERRAL_MAP_DROPS: Record<number, number> = {
     15: 1,
     16: 1,
     17: 1,
-    18: 1,
+    18: 56,
     19: 2,
     20: 2,
     21: 56,
