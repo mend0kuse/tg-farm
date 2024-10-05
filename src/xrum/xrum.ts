@@ -120,6 +120,8 @@ export class Xrum {
                 this.fullProfile ? `Друзья = ${this.fullProfile.friends.length}` : ''
             );
 
+            await this.getDailyInfo();
+
             if (!this.isCreated) {
                 try {
                     this.database.createAccount({ index: this.account.index, tokens: 0, tgId: this.account.id });
@@ -138,6 +140,7 @@ export class Xrum {
                 this.connectWallet,
                 // this.sendTransaction,
                 this.claimCompleted,
+                this.completeCheckIn,
             ];
 
             shuffleArray(actions);
@@ -194,6 +197,31 @@ export class Xrum {
             throw error;
         }
     }
+    async completeCheckIn() {
+        const day = Object.entries(this.fullProfile.daily ?? {}).find(([, status]) => status == 'canTake')?.[0];
+
+        if (!day) {
+            this.logger.log('Ежедневная награда уже собрана');
+            return;
+        }
+
+        try {
+            const payload = { data: day };
+            const response = (
+                await this.api.post('/quests/daily/claim', payload, {
+                    headers: this.createApiHeaders(payload),
+                })
+            ).data;
+
+            if (!response.success) {
+                throw new Error(response.error);
+            }
+
+            this.logger.log('Ежедневная награда успешно собрана');
+        } catch (error) {
+            this.logger.error('Ошибка получения дневного бонуса!', this.handleError(error));
+        }
+    }
 
     async login() {
         this.logger.log('Логин');
@@ -203,10 +231,6 @@ export class Xrum {
         const extractedData = telegramApi.extractWebAppData(url);
         const params = new URLSearchParams(extractedData);
         const userHash = params.get('hash') ?? '';
-
-        if (this.refCode) {
-            this.logger.log('REF CODE: ' + this.refCode);
-        }
 
         const login_data = {
             data: {
@@ -267,6 +291,24 @@ export class Xrum {
         }
     }
 
+    async getDailyInfo() {
+        this.logger.log('Получение информации о daily');
+
+        try {
+            const { data } = await this.api.post<{ data: any }>(
+                '/quests/daily',
+                {},
+                {
+                    headers: this.createApiHeaders({}),
+                }
+            );
+
+            this.fullProfile = { ...this.fullProfile, daily: data.data };
+        } catch (error) {
+            this.logger.error('Ошибка получения информации о дневных квестах!', this.handleError(error));
+        }
+    }
+
     async claimCompleted() {
         this.logger.log('Сбор награды за выполненные квесты');
 
@@ -290,6 +332,11 @@ export class Xrum {
         for (const { isArchived, checkType, key, checkData } of actualDbQuests) {
             if (isArchived) {
                 continue;
+            }
+
+            if (checkType === 'checkCode' && checkData) {
+                await sleep(random(5, 10));
+                await this.checkAndClaimQuest(key, checkData);
             }
 
             if (checkType === 'telegramChannel' && !isFlooded) {
