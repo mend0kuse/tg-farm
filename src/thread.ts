@@ -8,6 +8,8 @@ import { runEmpireWorker } from './xempire/worker';
 import { telegramApi } from './shared/telegram/telegram-api';
 import { parseSocks5Proxy } from './shared/utils';
 import { runDropsWorker } from './drops/worker';
+import { runBitcoinTapWorker } from './bitcoin-tap/worker';
+import { runVanaWorker } from './vana/worker';
 
 const user = workerData as TAccountData;
 
@@ -27,8 +29,9 @@ const user = workerData as TAccountData;
             runPixelWorker(user, telegramClient), // not pixel
             runEmpireWorker(user, telegramClient), // xempire
             runCatsWorker(user, telegramClient), // cats
-            // runVanaWorker(user, telegramClient), // vana
+            runVanaWorker(user, telegramClient), // vana
             runDropsWorker(user, telegramClient), // drops
+            runBitcoinTapWorker(user, telegramClient), // drops
         ]);
     } catch (error) {
         baseLogger.error(`Ошибка воркера ${user.index}:`, error);
