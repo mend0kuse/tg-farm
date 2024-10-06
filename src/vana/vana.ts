@@ -4,7 +4,7 @@ import { BaseLogger } from '../shared/logger';
 import axios, { AxiosError, AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { toInputUser } from '@mtcute/node/utils.js';
-import { random, sleep, shuffleArray, randomArrayItem, randomChance } from '../shared/utils';
+import { random, sleep, shuffleArray, randomChance } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { VanaDatabase } from './database';
 import { tonUtility } from '../shared/ton/ton-utility';
@@ -55,7 +55,7 @@ export class Vana {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            const delayInMinutes = cycle === 1 ? random(1, 120) : randomArrayItem([1, 2, 3, 4, 5, 6, 7, 8]) * 60;
+            const delayInMinutes = cycle === 1 ? random(1, 120) : random(7, 10) * 60;
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
 
             await sleep(delayInMinutes * 60);
@@ -107,7 +107,7 @@ export class Vana {
 
             await sleep(random(5, 10));
 
-            const actions = [this.completeTasks, this.sendLeaderBoard, this.sendInvite];
+            const actions = [this.completeTasks, this.sendLeaderBoard, this.sendInvite, this.completeGame];
 
             shuffleArray(actions);
 
@@ -136,31 +136,22 @@ export class Vana {
         }
     }
 
-    async completeTaps() {
-        await this.sendPageView('home');
+    async completeGame() {
+        // await this.sendPageView('face-detection');
+        // await this.sendPageView('home');
 
-        this.logger.log('Старт тапов');
+        this.logger.log('Старт игры');
 
         try {
-            let cycle = random(20, 40);
-            while (cycle > 0) {
-                await sleep(random(20, 30));
-
-                const points = random(5, 20);
-
-                await this.completeTask(1, points);
-                this.logger.log(`Успешно отправлен круг ${cycle}. Очков = `, points);
-
-                cycle--;
-            }
+            await this.api.get('/face-detection/game');
         } catch (error) {
-            this.logger.error('Ошибка выполнения тапов', this.handleError(error));
+            this.logger.error('Ошибка выполнения игры', this.handleError(error));
         }
     }
 
     async updateProfile(data: any) {
         try {
-            await this.api.patch('/player/7311867778', data);
+            await this.api.patch(`/player/${this.account.id}`, data);
         } catch (error) {
             this.logger.error('Ошибка обновления профиля', this.handleError(error));
         }
@@ -215,10 +206,6 @@ export class Vana {
             this.api.defaults.headers['X-Telegram-Web-App-Init-Data'] = telegramApi.extractWebAppData(url);
 
             await this.getProfile();
-
-            this.logger.log('Успешный логин');
-
-            await this.completeRef();
         } catch (_error) {
             const error = _error as AxiosError;
             if (error.status === HttpStatusCode.NotFound) {
