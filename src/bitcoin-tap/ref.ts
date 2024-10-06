@@ -1,7 +1,7 @@
 export const REFERRAL_MAP_BITCOIN_TAP: Record<number, number> = {
     2: 1,
-    // 10: 8,
-    // 11: 5,
+    10: 1,
+    11: 1,
     // 13: 10,
     14: 54,
     15: 55,
