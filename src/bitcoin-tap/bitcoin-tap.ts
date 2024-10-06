@@ -20,6 +20,7 @@ export class BitcoinTap {
     private friends = 0;
     private farmInfo: any;
     private walletInfo: any;
+    private dailyInfo: any[];
     private tasks: any[];
     private tasksEvents: any[];
 
@@ -115,6 +116,8 @@ export class BitcoinTap {
                 this.completeRoulette,
                 this.connectBitcoinWallet,
                 this.claimFarm,
+                this.completeDaily,
+                this.completeLottery,
             ];
 
             shuffleArray(actions);
@@ -144,9 +147,63 @@ export class BitcoinTap {
         }
     }
 
+    async getDaily() {
+        try {
+            this.dailyInfo = (await this.api.get(`/daily/?user_id=${this.profile.id}`)).data;
+            this.logger.log('Daily получен');
+        } catch (error) {
+            this.logger.error('Ошибка получения daily', this.handleError(error));
+        }
+    }
+
+    async completeDaily() {
+        if (!this.dailyInfo) {
+            return;
+        }
+
+        const day = this.dailyInfo.find((info: any) => info.state === 'available');
+        if (!day) {
+            this.logger.log('Daily уже собран');
+            return;
+        }
+
+        try {
+            await this.api.post(`/daily/event/create/`, {
+                user_id: this.profile.id,
+                daily_check_id: day.id,
+            });
+
+            this.logger.log('Собрал daily');
+        } catch (error) {
+            this.logger.error('Ошибка выполнения daily', this.handleError(error));
+        }
+    }
+
+    async completeLottery() {
+        try {
+            const lottery = (await this.api.get('/lottery/')).data;
+            await this.api.get(`/lottery/purchase/stats/?user_id=${this.profile.id}`);
+
+            const runeStone = lottery.find((lt: any) => lt.id === 3);
+            if (!runeStone?.is_active || this.profile.points_balance < runeStone.price) {
+                return;
+            }
+
+            await this.api.post(`/lottery/purchase/create/`, {
+                user_id: this.profile.id,
+                lottery_id: runeStone.id,
+            });
+
+            this.logger.log('Совершил лотерею');
+            await this.api.get(`/lottery/purchase/stats/?user_id=${this.profile.id}`);
+        } catch (error) {
+            this.logger.error('Ошибка выполнения лотереи', this.handleError(error));
+        }
+    }
+
     async completeRoulette() {
         try {
-            while (this.profile.points_balance > 1000) {
+            while (this.profile.points_balance > 5000) {
                 await this.api.post(`/roulette/event/create/`, {
                     user_id: this.profile.id,
                 });
@@ -166,6 +223,7 @@ export class BitcoinTap {
             this.getRouletteStats(),
             this.getTasks(),
             this.getFarm(),
+            this.getDaily(),
         ]);
     }
 
