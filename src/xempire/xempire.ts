@@ -174,7 +174,7 @@ export class XEmpire {
             ];
 
             const actionsSecondary = [
-                this.sendTransaction,
+                // this.sendTransaction,
                 this.completeRiddleAndRebus,
                 this.completeImprovements,
                 this.completeBoxes,

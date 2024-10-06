@@ -316,9 +316,11 @@ export class Pixel {
             const gamesApi = axios.create({ ...this.api.defaults, baseURL: 'https://api.notcoin.tg' });
 
             gamesApi.defaults.headers['bypass-tunnel-reminder'] = 'x';
-            gamesApi.defaults.headers['X-Auth-Token'] = 'null';
+            gamesApi.defaults.headers['X-Auth-Token'] = 'Bearer null';
             gamesApi.defaults.headers['Referer'] = 'https://webapp.notcoin.tg';
             gamesApi.defaults.headers['Origin'] = 'https://webapp.notcoin.tg';
+            delete gamesApi.defaults.headers['Authorization'];
+            delete gamesApi.defaults.headers['content-type'];
 
             const { data } = await gamesApi.post('/auth/login', {
                 webAppData,
@@ -333,10 +335,15 @@ export class Pixel {
             if (!squad) {
                 throw new Error('Не найден сквад');
             }
-            const response = await gamesApi.post(`/squads/${squad.slug}/join`);
-            if (response.status === HttpStatusCode.Created) {
+            const response = await gamesApi.post(`/squads/${squad.slug}/join`, {
+                chatId: squad.chatId,
+            });
+
+            if (response.status !== HttpStatusCode.Created) {
                 throw new Error('Неудачное вступление в сквад');
             }
+
+            this.logger.log('Успешное вступление в клан');
         } catch (error) {
             if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
                 this.logger.error('FLOOD WAIT', error.seconds * 2);
@@ -566,7 +573,7 @@ export class Pixel {
         {
             key: 'notpixel_channel',
             type: 'channel',
-            checkData: 'channel:notpixel',
+            checkData: 'channel:notpixel_channel',
         },
         {
             key: 'leagueBonusSilver',
