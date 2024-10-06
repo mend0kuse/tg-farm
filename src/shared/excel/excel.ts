@@ -40,6 +40,8 @@ export class ExcelUtility {
                 addressTon: row[6] as string,
                 proxy: row[7] as string,
                 userAgent: row[8] as string,
+                btcMnemonic: row[9] as string,
+                btcAddress: row[10] as string,
             };
         });
 
