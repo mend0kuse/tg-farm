@@ -58,7 +58,7 @@ export const runCatsWorker = async (user: TAccountData, telegramClient: Telegram
             baseLogger.log(`[CATS_${user.index}] Старт воркера`);
 
             await cats.start();
-            const delay = 60 * 60 * random(24, 26);
+            const delay = 60 * 60 * random(6, 8);
             baseLogger.log(`[CATS_${user.index}] Применена задержка до следующего круга. Часов `, delay / 60 / 60);
             await sleep(delay);
         } catch (error) {
