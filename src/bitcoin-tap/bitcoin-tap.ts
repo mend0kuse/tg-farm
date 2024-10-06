@@ -57,8 +57,7 @@ export class BitcoinTap {
             .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
 
         mainLoop: while (true) {
-            // const delayInMinutes = cycle === 1 ? random(1, 120) : random(2, 3) * 60;
-            const delayInMinutes = cycle === 1 ? random(1, 2) : random(1, 3) * 60;
+            const delayInMinutes = cycle === 1 ? random(1, 120) : random(2, 3) * 60;
             this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
 
             await sleep(delayInMinutes * 60);
