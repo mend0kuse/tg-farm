@@ -7,6 +7,7 @@ import { getRandomAndroidUserAgent } from '../shared/user-agent';
 import { fileURLToPath } from 'url';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { tonUtility } from '../shared/ton/ton-utility';
+import { bitcoinUtility } from '../shared/bitcoin/bitcoin-utility';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,8 @@ export type TAccountData = {
     addressTon: string;
     proxy: string;
     userAgent: string;
+    btcMnemonic: string;
+    btcAddress: string;
 };
 
 const proxies = (() => {
@@ -50,7 +53,8 @@ const createAccount = async (): Promise<TAccountData> => {
 
     const me = await telegramClient.getMe();
 
-    const { mnemonic, address } = await tonUtility.createWallet();
+    const { mnemonic: mnemonicTon, address: addressTon } = await tonUtility.createWallet();
+    const { address: btcAddress, mnemonic: btcMnemonic } = bitcoinUtility.createWallet();
     await telegramClient.close();
 
     return {
@@ -59,10 +63,12 @@ const createAccount = async (): Promise<TAccountData> => {
         phone: me.phoneNumber ?? '',
         username: me.username ?? '',
         session: sessionResult,
-        mnemonicTon: mnemonic,
-        addressTon: address,
+        mnemonicTon,
+        addressTon,
         proxy,
         userAgent: getRandomAndroidUserAgent(),
+        btcMnemonic,
+        btcAddress,
     };
 };
 

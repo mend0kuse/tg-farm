@@ -17,6 +17,9 @@ export class BitcoinUtility {
         const account = root.derivePath("m/84'/0'/0'/0/0");
 
         const { address } = bitcoin.payments.p2wpkh({ pubkey: account.publicKey });
+        if (!address) {
+            throw new Error('Не удалось создать bitcoin кошелек');
+        }
 
         return {
             mnemonic,
