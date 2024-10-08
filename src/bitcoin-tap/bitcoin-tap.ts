@@ -203,13 +203,15 @@ export class BitcoinTap {
 
     async completeRoulette() {
         try {
-            while (this.profile.points_balance > 5000) {
+            let attempts = random(1, 3);
+            while (this.profile.points_balance > 1000 && attempts > 0) {
                 await this.api.post(`/roulette/event/create/`, {
                     user_id: this.profile.id,
                 });
 
                 this.logger.log('Прокрутили рулетку');
                 this.profile.points_balance -= 1000;
+                attempts--;
             }
         } catch (error) {
             this.logger.error('Ошибка выполнения прокрутки', this.handleError(error));
