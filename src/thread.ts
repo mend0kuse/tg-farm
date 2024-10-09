@@ -10,6 +10,7 @@ import { parseSocks5Proxy } from './shared/utils';
 import { runDropsWorker } from './drops/worker';
 import { runBitcoinTapWorker } from './bitcoin-tap/worker';
 import { runVanaWorker } from './vana/worker';
+import { runBlumWorker } from './blum/worker';
 
 const user = workerData as TAccountData;
 
@@ -31,7 +32,8 @@ const user = workerData as TAccountData;
             runCatsWorker(user, telegramClient), // cats
             runVanaWorker(user, telegramClient), // vana
             runDropsWorker(user, telegramClient), // drops
-            runBitcoinTapWorker(user, telegramClient), // drops
+            runBitcoinTapWorker(user, telegramClient), // bitcoin-tap
+            runBlumWorker(user, telegramClient), // blum
         ]);
     } catch (error) {
         baseLogger.error(`Ошибка воркера ${user.index}:`, error);
