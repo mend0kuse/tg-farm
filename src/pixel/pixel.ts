@@ -273,7 +273,7 @@ export class Pixel {
         this.logger.log('Отправка событий tganalytics');
 
         try {
-            await this.analyticsApi.post('https://tganalytics.xyz/events', payload, {
+            await this.analyticsApi.post('/events', payload, {
                 headers: {
                     Content: randomArrayItem(this.CONTENT_DATA),
                     'Content-Length': JSON.stringify(payload).length,

@@ -203,7 +203,7 @@ export class BitcoinTap {
 
     async completeRoulette() {
         try {
-            let attempts = random(1, 3);
+            let attempts = random(0, 3);
             while (this.profile.points_balance > 1000 && attempts > 0) {
                 await this.api.post(`/roulette/event/create/`, {
                     user_id: this.profile.id,
