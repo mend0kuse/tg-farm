@@ -98,7 +98,7 @@ export class XEmpire {
             cycleNumber++;
 
             const firstCycleDelayMinutes = random(1, 120);
-            const delayInMinutes = this.level ? this.getDelayByLevel(this.level) : firstCycleDelayMinutes;
+            const delayInMinutes = this.level ? random(189, 363) : firstCycleDelayMinutes;
 
             this.logger.accentLog(
                 `Задержка ${delayInMinutes} минут перед стартом прохода #${cycleNumber}...`,
@@ -1506,16 +1506,6 @@ export class XEmpire {
         }
 
         return availBet;
-    }
-
-    getDelayByLevel(level: number) {
-        const minDelay = 5;
-        const maxDelay = 210;
-        const maxLevel = 25;
-
-        const delay = minDelay + ((maxDelay - minDelay) / (maxLevel - 1)) * (level - 1);
-
-        return Math.round(random(delay - 1, delay + 1));
     }
 }
 
