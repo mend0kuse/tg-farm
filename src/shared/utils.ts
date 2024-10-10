@@ -61,3 +61,26 @@ export const parseSocks5Proxy = (url: string): TSocks5Proxy | null => {
         return null;
     }
 };
+
+export const secondsUntilUTCHour = (targetHour: number) => {
+    const now = new Date();
+    const currentUTCHour = now.getUTCHours();
+
+    let ms;
+
+    if (currentUTCHour < targetHour) {
+        const nextTargetTimeToday = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), targetHour)
+        );
+
+        ms = nextTargetTimeToday.getTime() - now.getTime();
+    } else {
+        const nextTargetTimeTomorrow = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, targetHour)
+        );
+
+        ms = nextTargetTimeTomorrow.getTime() - now.getTime();
+    }
+
+    return ms / 1000;
+};

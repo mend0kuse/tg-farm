@@ -5,7 +5,7 @@ import { TAccountData } from '../scripts/accounts-generator';
 import { excelUtility } from '../shared/excel/excel';
 import { baseLogger } from '../shared/logger';
 import { telegramApi } from '../shared/telegram/telegram-api';
-import { random, sleep } from '../shared/utils';
+import { random, secondsUntilUTCHour, sleep } from '../shared/utils';
 import { xrumDatabase } from './database';
 import { Xrum } from './xrum';
 
@@ -61,7 +61,7 @@ export const runHrumWorker = async (user: TAccountData, telegramClient: Telegram
             });
 
             await hrum.start();
-            const delay = hrum.secondsUntilUTCHour(random(7, 9));
+            const delay = secondsUntilUTCHour(random(7, 9));
             baseLogger.log('[HRUM] Применена задержка до следующего круга. Часов ', delay / 60 / 60);
             await sleep(delay);
         } catch (error) {
