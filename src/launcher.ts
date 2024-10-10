@@ -13,13 +13,15 @@ async function start() {
         const usersEventBus = new EventBus();
 
         // Запуск всех
-        // await Promise.allSettled(users.map((user) => createUserThread(user)));
+        await Promise.allSettled(users.map((user) => createUserThread(user, usersEventBus)));
 
         // Запуск группы (Поменять номера аккаунтов)
-        // await Promise.allSettled([1, 2, 3].map((index) => createUserThread(excelUtility.getAccountByIndex(index))));
+        // await Promise.allSettled(
+        //     [24, 25, 26, 56, 27].map((index) => createUserThread(excelUtility.getAccountByIndex(index), usersEventBus))
+        // );
 
         // Запуск отдельного (Поменять номер аккаунта)
-        await createUserThread(excelUtility.getAccountByIndex(2), usersEventBus);
+        // await createUserThread(excelUtility.getAccountByIndex(2), usersEventBus);
     } catch (error) {
         baseLogger.error('Ошибка: ', error);
     }

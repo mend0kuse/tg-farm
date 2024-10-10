@@ -1,4 +1,3 @@
-import { workerData } from 'worker_threads';
 import { TAccountData } from './scripts/accounts-generator';
 import { baseLogger } from './shared/logger';
 import { runCatsWorker } from './cats/worker';
@@ -26,15 +25,15 @@ export const createUserThread = async (user: TAccountData, usersEventBus: EventB
         // Чтобы выключить бота - закомментируйте или удалите строчку
 
         await Promise.allSettled([
-            // runHrumWorker(user, telegramClient), // xrum
+            runHrumWorker(user, telegramClient), // xrum
             // runPixelWorker(user, telegramClient), // not pixel
-            // runEmpireWorker(user, telegramClient), // xempire
-            // runCatsWorker(user, telegramClient), // cats
-            // runVanaWorker(user, telegramClient), // vana
-            // runDropsWorker(user, telegramClient), // drops
-            // runBitcoinTapWorker(user, telegramClient), // bitcoin-tap
-            // runBlumWorker(user, telegramClient), // blum
-            runDaoWorker(user, telegramClient, usersEventBus), // blum
+            runEmpireWorker(user, telegramClient), // xempire
+            runCatsWorker(user, telegramClient), // cats
+            runVanaWorker(user, telegramClient), // vana
+            runDropsWorker(user, telegramClient), // drops
+            runBitcoinTapWorker(user, telegramClient), // bitcoin-tap
+            runBlumWorker(user, telegramClient), // blum
+            runDaoWorker(user, telegramClient, usersEventBus), // dao
         ]);
     } catch (error) {
         baseLogger.error(`Ошибка воркера ${user.index}:`, error);

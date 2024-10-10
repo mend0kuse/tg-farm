@@ -44,7 +44,7 @@ const proxies = (() => {
 })();
 
 const createAccount = async (): Promise<TAccountData> => {
-    const proxy = randomArrayItem(proxies.slice(50, -1));
+    const proxy = randomArrayItem(proxies);
 
     const { telegramClient, sessionResult } = await telegramApi.createClientBySession({
         proxy: parseSocks5Proxy(proxy ?? ''),
