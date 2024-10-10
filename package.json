@@ -50,6 +50,7 @@
         "@types/better-sqlite3": "^7.6.11",
         "@types/mongoose": "^5.11.97",
         "@types/node": "^22.5.4",
+        "@types/ws": "^8.5.12",
         "@types/xlsx": "^0.0.36",
         "@typescript-eslint/eslint-plugin": "^8.6.0",
         "@typescript-eslint/parser": "^8.6.0",

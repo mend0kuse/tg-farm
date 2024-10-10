@@ -519,6 +519,13 @@
   dependencies:
     "@types/webidl-conversions" "*"
 
+"@types/ws@^8.5.12":
+  version "8.5.12"
+  resolved "https://registry.yarnpkg.com/@types/ws/-/ws-8.5.12.tgz#619475fe98f35ccca2a2f6c137702d85ec247b7e"
+  integrity sha512-3tPRkv1EtkDpzlgyKyI8pGsGZAGPEaXeu0DOj5DI25Ja91bdAYddYHbADRYVrZMRbfW+1l5YwXVDKohDJNQxkQ==
+  dependencies:
+    "@types/node" "*"
+
 "@types/xlsx@^0.0.36":
   version "0.0.36"
   resolved "https://registry.yarnpkg.com/@types/xlsx/-/xlsx-0.0.36.tgz#b5062003e5c5374ab4f08fdd3bf69da4d4013af8"
