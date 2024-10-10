@@ -408,19 +408,19 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
-"@ton-api/client@^0.1.1":
+"@ton-api/client@0.1.1":
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/@ton-api/client/-/client-0.1.1.tgz#fc31ae6d102f179812693c9f4530943ebe005014"
   integrity sha512-vtc9689IECIZ9z+42C1nRX+d9q7eZaO1qCsn22cuM38SC+e19eXWJakz949+tXMF+LWBYf9eFQKyskXAx0C4Cg==
   dependencies:
     core-js-pure "^3.38.0"
 
-"@ton-api/ton-adapter@^0.1.0":
+"@ton-api/ton-adapter@0.1.0":
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@ton-api/ton-adapter/-/ton-adapter-0.1.0.tgz#baeeda8523c46c478300842b207cc9e190d49d99"
   integrity sha512-HhHSWbeXmkGDhz/xoR6sV7Al5UcerxEJaXGolrOCC7xmiuG7WoG8idhc3kQOEa3W7YtWq0NQeEnneB0nt5dxxw==
 
-"@ton/core@^0.58.1":
+"@ton/core@0.58.1":
   version "0.58.1"
   resolved "https://registry.yarnpkg.com/@ton/core/-/core-0.58.1.tgz#f6f2ecef6a7149bcd23825bfbb454f116d54363f"
   integrity sha512-zydh42iT6E3U3Ky/DhTFqJMN/ycKKzbsHASY257Qr2sZn97G/MOcHFizPfMnbJJgx0H9iHX6mdyMvp1IKBVAFA==
@@ -434,7 +434,7 @@
   dependencies:
     jssha "3.2.0"
 
-"@ton/crypto@^3.3.0":
+"@ton/crypto@3.3.0":
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/@ton/crypto/-/crypto-3.3.0.tgz#019103df6540fbc1d8102979b4587bc85ff9779e"
   integrity sha512-/A6CYGgA/H36OZ9BbTaGerKtzWp50rg67ZCH2oIjV1NcrBaCK9Z343M+CxedvM7Haf3f/Ee9EhxyeTp0GKMUpA==
@@ -443,7 +443,7 @@
     jssha "3.2.0"
     tweetnacl "1.0.3"
 
-"@ton/ton@^15.0.0":
+"@ton/ton@15.0.0":
   version "15.0.0"
   resolved "https://registry.yarnpkg.com/@ton/ton/-/ton-15.0.0.tgz#03aab727d082db877ec6012f3b1b3fb6aa564b40"
   integrity sha512-0xBivkN0u0+vczt3mKJrx5yqkCxRR00wM8gXCmN/eOzzHKXRFWDEjJp8EEs5J/mq1Op/OhCOFExmOZkr58wgOA==
@@ -518,13 +518,6 @@
   integrity sha512-coYR071JRaHa+xoEvvYqvnIHaVqaYrLPbsufM9BF63HkwI5Lgmy2QR8Q5K/lYDYo5AK82wOvSOS0UsLTpTG7uQ==
   dependencies:
     "@types/webidl-conversions" "*"
-
-"@types/ws@^8.5.12":
-  version "8.5.12"
-  resolved "https://registry.yarnpkg.com/@types/ws/-/ws-8.5.12.tgz#619475fe98f35ccca2a2f6c137702d85ec247b7e"
-  integrity sha512-3tPRkv1EtkDpzlgyKyI8pGsGZAGPEaXeu0DOj5DI25Ja91bdAYddYHbADRYVrZMRbfW+1l5YwXVDKohDJNQxkQ==
-  dependencies:
-    "@types/node" "*"
 
 "@types/xlsx@^0.0.36":
   version "0.0.36"
