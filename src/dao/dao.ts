@@ -70,7 +70,7 @@ export class Dao {
         mainLoop: while (true) {
             const joinedUsers = [];
             const delayInMinutes = (() => {
-                if (this.isPassiveUser) {
+                if (!this.isPassiveUser) {
                     return this.nextTimeStart;
                 }
 
