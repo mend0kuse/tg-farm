@@ -1,4 +1,5 @@
 import readline from 'readline';
+import crypto from 'crypto';
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -83,4 +84,25 @@ export const secondsUntilUTCHour = (targetHour: number) => {
     }
 
     return ms / 1000;
+};
+
+export const isMoreThanADayPassed = (date: string | number) => {
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    const timeDifference = now - new Date(date).getTime();
+    return timeDifference > oneDay;
+};
+
+export const generateRandomString = (length: number = 8) => {
+    const characters = 'abcdef0123456789';
+    let randomString = '';
+    const charactersLength = characters.length;
+
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor((crypto.getRandomValues(new Uint8Array(1))[0] / 256) * charactersLength);
+        randomString += characters[randomIndex];
+    }
+
+    return randomString;
 };

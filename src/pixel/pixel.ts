@@ -4,10 +4,9 @@ import { BaseLogger } from '../shared/logger';
 import axios, { AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { toInputUser } from '@mtcute/node/utils.js';
-import { random, sleep, shuffleArray, randomArrayItem, randomChance } from '../shared/utils';
+import { random, sleep, shuffleArray, randomArrayItem, randomChance, generateRandomString } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { PixelDatabase } from './database';
-import crypto from 'crypto';
 
 export class Pixel {
     private account: TAccountData;
@@ -673,25 +672,12 @@ export class Pixel {
 
     generateSessionId(): string {
         return [
-            this.generateRandomString(8),
-            this.generateRandomString(4),
-            '4' + this.generateRandomString(3),
-            this.generateRandomString(4),
-            this.generateRandomString(12),
+            generateRandomString(8),
+            generateRandomString(4),
+            '4' + generateRandomString(3),
+            generateRandomString(4),
+            generateRandomString(12),
         ].join('-');
-    }
-
-    generateRandomString(length: number = 8): string {
-        const characters = 'abcdef0123456789';
-        let randomString = '';
-        const charactersLength = characters.length;
-
-        for (let i = 0; i < length; i++) {
-            const randomIndex = Math.floor((crypto.getRandomValues(new Uint8Array(1))[0] / 256) * charactersLength);
-            randomString += characters[randomIndex];
-        }
-
-        return randomString;
     }
 
     generateGameEvent(eventName: string, eventTime = Date.now()) {

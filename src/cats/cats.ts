@@ -4,7 +4,7 @@ import { BaseLogger } from '../shared/logger';
 import axios, { AxiosError, AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { toInputUser } from '@mtcute/node/utils.js';
-import { random, sleep, shuffleArray } from '../shared/utils';
+import { random, sleep, shuffleArray, isMoreThanADayPassed, generateRandomString } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { APP_CONFIG } from '../config';
 import { CatsDatabase } from './database';
@@ -186,7 +186,12 @@ export class Cats {
             await this.getExternalData();
             await this.getDailyTasks();
 
-            const actions = [this.completeTasks, this.sendTrx, this.checkEligibility];
+            const actions = [
+                this.completeTasks,
+                // this.sendTrx,
+                // this.checkEligibility,
+                this.completeAvatar,
+            ];
 
             shuffleArray(actions);
 
@@ -258,6 +263,59 @@ export class Cats {
             this.logger.log('Успешный sync');
         } catch (error) {
             this.logger.error('Ошибка синхронизации:', this.handleError(error));
+        }
+    }
+
+    async completeAvatar() {
+        this.logger.log('Выполнение аватарки');
+
+        try {
+            await this.api.get('/user/avatar/items/my-items');
+            const { attemptTime } = (await this.api.get('/user/avatar')).data;
+
+            this.logger.log('Успешно получен аватар');
+            if (attemptTime && !isMoreThanADayPassed(attemptTime)) {
+                this.logger.log('Прошло мало времени с отправки аватара');
+                return;
+            }
+
+            await sleep(random(5, 10));
+            await this.sendCatPhoto();
+        } catch (error) {
+            this.logger.error('Ошибка завершения аватарки:', this.handleError(error));
+        }
+    }
+
+    async getRandomCat() {
+        return (
+            await axios.get(`https://cataas.com/cat?timestamp=${Date.now()}`, {
+                headers: {
+                    accept: 'image/avif,image/webp,image/png,image/svg+xml',
+                },
+                responseType: 'blob',
+            })
+        ).data;
+    }
+
+    async sendCatPhoto() {
+        this.logger.log('Отправка фотографии...');
+
+        const cat = await this.getRandomCat();
+
+        const catFile = new File([cat], `${generateRandomString(random(5, 10))}.png`, { type: cat.type });
+
+        const data = new FormData();
+        data.append('photo', catFile);
+
+        try {
+            await this.api.post('/user/avatar/upgrade', data, {
+                headers: {
+                    'content-type': 'multipart/form-data',
+                },
+            });
+            this.logger.log('Фотография кота успешно отправлена');
+        } catch (error) {
+            this.logger.error('Ошибка отправки фотографии:', error);
         }
     }
 
@@ -504,6 +562,7 @@ export class Cats {
             this.logger.error('Ошибка получения заданий', this.handleError(error));
         }
     }
+
     async getCatsTasks() {
         try {
             return (await this.api.get('/tasks/user?group=cats')).data.tasks;
@@ -516,7 +575,7 @@ export class Cats {
 
     handleError(error: unknown) {
         if (isAxiosError(error)) {
-            return `Axios error: ${error.status} ${error.code} ${error.message} `;
+            return `Axios error: ${error.status} ${error.code} ${error.message} ${JSON.stringify(error.response?.data)}`;
         } else {
             return error as string;
         }
