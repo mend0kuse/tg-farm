@@ -7,6 +7,7 @@ import { toInputUser } from '@mtcute/node/utils.js';
 import { random, sleep, shuffleArray, randomArrayItem, randomChance, generateRandomString } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { PixelDatabase } from './database';
+import WebSocket from 'ws';
 
 export class Pixel {
     private account: TAccountData;
@@ -21,6 +22,8 @@ export class Pixel {
     private analyticsApi: AxiosInstance;
     private API_URL = 'https://notpx.app/api/v1';
     private isCreated: boolean = false;
+    private ws: WebSocket;
+    private template: any;
 
     constructor({
         account,
@@ -93,13 +96,14 @@ export class Pixel {
                 continue mainLoop;
             }
 
-            await this.getMiningStatus();
-
             this.logger.accentLog(
                 'Успешный логин. Начало прохода. \n',
                 this.profile ? `Токены = ${this.profile.balance}. \n` : ' ',
                 this.profile ? `Лига = ${this.profile.league}. \n` : ' '
             );
+
+            this.setupWs();
+            await this.getInitialData();
 
             await sleep(random(5, 10));
 
@@ -117,18 +121,21 @@ export class Pixel {
                 }
             }
 
-            await this.sendClaimingEvent();
             await sleep(random(1, 3));
-            await this.claimMining();
 
             const actions = [
+                this.claimMining,
                 this.completeTasks,
                 this.completeImprovements,
                 this.completePaint,
+                this.createTemplate,
                 this.joinSquad,
                 this.sendFriendsEvent,
                 this.sendHistoryEvent,
                 this.sendLeaderBoardEvent,
+                this.sendProfileEvent,
+                this.sendSquadEvent,
+                this.sendStarsEvent,
             ];
 
             shuffleArray(actions);
@@ -154,6 +161,57 @@ export class Pixel {
 
             cycle++;
             this.logger.accentLog('Конец прохода');
+            this.ws.close();
+        }
+    }
+
+    async getInitialData() {
+        await Promise.allSettled([this.getMiningStatus(), this.getTemplateById(), this.getMyTemplate()]);
+    }
+
+    setupWs() {
+        this.ws = new WebSocket('wss://notpx.app/api/v2/image/ws');
+        this.ws.onopen = () => this.logger.log('WebSocket соединение установлено');
+        this.ws.onerror = (err: any) => this.logger.error('Ошибка ws: ', err);
+        this.ws.onclose = () => this.logger.log('WebSocket соединение завершено');
+    }
+
+    async getMyTemplate() {
+        this.template = (await this.getTemplateById('my'))?.data ?? null;
+    }
+    async getTemplateById(id: string | number = this.account.id) {
+        try {
+            return await this.api.get(`/image/template/${id}`);
+        } catch (error) {
+            this.logger.error(`Ошибка при загрузке template ${id}`, this.handleError(error));
+        }
+    }
+
+    async createTemplate() {
+        if (this.template) {
+            this.logger.log('Уже создан шаблон');
+            return;
+        }
+
+        this.logger.log('Создание шаблона...')
+
+        await this.sendPageView('https://app.notpx.app/template');
+
+        try {
+            const templates = (await this.api.get('/image/template/list?limit=12&offset=0')).data;
+            const { templateId } = randomArrayItem(templates) as any;
+
+            await sleep(random(5, 10));
+            await this.getTemplateById(templateId);
+
+            await sleep(random(3, 5));
+
+            await this.api.put(`/image/template/subscribe/${templateId}`);
+            this.template = (await this.getTemplateById(templateId))?.data;
+
+            this.logger.log('Создан новый шаблон');
+        } catch (error) {
+            this.logger.error('Ошибка при создании шаблона ', this.handleError(error));
         }
     }
 
@@ -199,6 +257,30 @@ export class Pixel {
         await this.sendPageView('https://app.notpx.app/ratings');
     }
 
+    async sendProfileEvent() {
+        if (!randomChance(20)) {
+            return;
+        }
+
+        await this.sendPageView('https://app.notpx.app/my-profile');
+    }
+
+    async sendSquadEvent() {
+        if (!randomChance(20)) {
+            return;
+        }
+
+        await this.sendPageView('https://app.notpx.app/my-squad');
+    }
+
+    async sendStarsEvent() {
+        if (!randomChance(20)) {
+            return;
+        }
+
+        await this.sendPageView('https://app.notpx.app/stars');
+    }
+
     async sendClaimingEvent() {
         await this.sendPageView('https://app.notpx.app/claiming');
     }
@@ -209,6 +291,7 @@ export class Pixel {
         }
 
         await this.sendPageView('https://app.notpx.app/history');
+        await this.api.get('/history/all?offset=0&limit=50');
     }
 
     async login() {
@@ -237,35 +320,39 @@ export class Pixel {
 
         this.logger.log('Отправка событий plausible');
 
-        await axios.post(
-            'https://plausible.joincommunity.xyz/api/event',
-            {
-                n: 'pageview',
-                u: url,
-                d: 'notpx.app',
-                r: 'https://web.telegram.org/',
-            },
-            {
-                httpAgent: agent,
-                httpsAgent: agent,
-                headers: {
-                    accept: '*/*',
-                    'accept-language': 'en-US;q=0.8,en;q=0.7',
-                    'content-type': 'text/plain',
-                    'sec-ch-ua': '"Google Chrome";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
-                    'sec-ch-ua-mobile': '?0',
-                    'sec-fetch-dest': 'empty',
-                    'sec-fetch-mode': 'cors',
-                    'sec-fetch-site': 'cross-site',
-                    'sec-ch-ua-platform': '"Android"',
-                    referrerPolicy: 'strict-origin-when-cross-origin',
-                    priority: 'u=1, i',
-                    Referer: 'https://app.notpx.app/',
-                    Origin: 'https://app.notpx.app',
-                    'User-Agent': this.account.userAgent,
+        try {
+            await axios.post(
+                'https://plausible.joincommunity.xyz/api/event',
+                {
+                    n: 'pageview',
+                    u: url,
+                    d: 'notpx.app',
+                    r: 'https://web.telegram.org/',
                 },
-            }
-        );
+                {
+                    httpAgent: agent,
+                    httpsAgent: agent,
+                    headers: {
+                        accept: '*/*',
+                        'accept-language': 'en-US;q=0.8,en;q=0.7',
+                        'content-type': 'text/plain',
+                        'sec-ch-ua': '"Google Chrome";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
+                        'sec-ch-ua-mobile': '?0',
+                        'sec-fetch-dest': 'empty',
+                        'sec-fetch-mode': 'cors',
+                        'sec-fetch-site': 'cross-site',
+                        'sec-ch-ua-platform': '"Android"',
+                        referrerPolicy: 'strict-origin-when-cross-origin',
+                        priority: 'u=1, i',
+                        Referer: 'https://app.notpx.app/',
+                        Origin: 'https://app.notpx.app',
+                        'User-Agent': this.account.userAgent,
+                    },
+                }
+            );
+        } catch (error) {
+            this.logger.error('Ошибка отправки событий plausible', this.handleError(error));
+        }
     }
 
     async sendGameEvent(payload: any[]) {
@@ -285,6 +372,7 @@ export class Pixel {
 
     async claimMining() {
         this.logger.log(`Старт клейма`);
+        await this.sendClaimingEvent();
 
         if (this.mining.fromStart * this.mining.speedPerSecond < random(0.3, 0.5)) {
             this.logger.log('Прошло мало времени с последнего клейма');
@@ -363,15 +451,30 @@ export class Pixel {
     }
 
     async completePaint() {
+        if (!this.template) {
+            this.logger.log('Не найден шаблон для рисования');
+            return;
+        }
+
         this.logger.log(`Старт рисования. Заряды =`, this.mining.charges);
+
+        const preparePixel = (x: number, y: number) => {
+            return Number(y + '' + (x + 1));
+        };
+
+        const { x, y, imageSize } = this.template;
+
+        const minPixelId = preparePixel(x, y);
+        const maxPixelId = preparePixel(x + imageSize, y + imageSize);
 
         const colorStrategy = randomArrayItem(['random', 'same']);
         let color = randomArrayItem(this.COLORS);
-        const firstPixelId = random(1, this.MAX_PIXEL_ID);
+
+        const firstPixelId = random(minPixelId, maxPixelId);
         let pixelId = firstPixelId;
 
         const getPixelInValidRange = () => {
-            return pixelId >= 1 && pixelId <= this.MAX_PIXEL_ID;
+            return pixelId >= minPixelId && pixelId <= maxPixelId;
         };
 
         let charges = this.mining.charges;
