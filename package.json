@@ -38,10 +38,12 @@
         "bitcoinjs-lib": "6.1.0",
         "bitget-api": "^2.0.10",
         "bybit-api": "^3.10.18",
+        "canvas": "^2.11.2",
         "centrifuge": "^5.2.2",
         "crypto": "^1.0.1",
         "dotenv": "^16.4.5",
         "moment-timezone": "^0.5.45",
+        "sharp": "^0.33.5",
         "socks-proxy-agent": "^8.0.4",
         "ws": "^8.18.0",
         "xlsx": "^0.18.5"

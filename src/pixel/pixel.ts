@@ -4,10 +4,20 @@ import { BaseLogger } from '../shared/logger';
 import axios, { AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { toInputUser } from '@mtcute/node/utils.js';
-import { random, sleep, shuffleArray, randomArrayItem, randomChance, generateRandomString } from '../shared/utils';
+import {
+    random,
+    sleep,
+    shuffleArray,
+    randomArrayItem,
+    randomChance,
+    generateRandomString,
+    rgbaToHex,
+} from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { PixelDatabase } from './database';
 import WebSocket from 'ws';
+import { loadImage, createCanvas } from 'canvas';
+import sharp from 'sharp';
 
 export class Pixel {
     private account: TAccountData;
@@ -130,17 +140,26 @@ export class Pixel {
                 this.completePaint,
                 this.createTemplate,
                 this.joinSquad,
+            ];
+
+            const analytics = [
                 this.sendFriendsEvent,
                 this.sendHistoryEvent,
                 this.sendLeaderBoardEvent,
                 this.sendProfileEvent,
                 this.sendSquadEvent,
                 this.sendStarsEvent,
+                this.sendTemplateEvent,
+                this.sendPrivacyEvent,
+                this.sendRulesEvent,
+                this.sendTermsEvent,
             ];
 
-            shuffleArray(actions);
+            const merged = [...actions, ...analytics];
 
-            for (const promise of actions) {
+            shuffleArray(merged);
+
+            for (const promise of merged) {
                 try {
                     await sleep(random(5, 10));
                     await promise.call(this);
@@ -193,7 +212,7 @@ export class Pixel {
             return;
         }
 
-        this.logger.log('Создание шаблона...')
+        this.logger.log('Создание шаблона...');
 
         await this.sendPageView('https://app.notpx.app/template');
 
@@ -294,6 +313,38 @@ export class Pixel {
         await this.api.get('/history/all?offset=0&limit=50');
     }
 
+    async sendTemplateEvent() {
+        if (!randomChance(5)) {
+            return;
+        }
+
+        await this.sendPageView('https://app.notpx.app/template');
+    }
+
+    async sendPrivacyEvent() {
+        if (!randomChance(5)) {
+            return;
+        }
+
+        await this.sendPageView('https://app.notpx.app/privacy');
+    }
+
+    async sendRulesEvent() {
+        if (!randomChance(5)) {
+            return;
+        }
+
+        await this.sendPageView('https://app.notpx.app/rules');
+    }
+
+    async sendTermsEvent() {
+        if (!randomChance(5)) {
+            return;
+        }
+
+        await this.sendPageView('https://app.notpx.app/terms');
+    }
+
     async login() {
         this.logger.log('Старт логина');
 
@@ -362,7 +413,6 @@ export class Pixel {
             await this.analyticsApi.post('/events', payload, {
                 headers: {
                     Content: randomArrayItem(this.CONTENT_DATA),
-                    'Content-Length': JSON.stringify(payload).length,
                 },
             });
         } catch (error) {
@@ -456,61 +506,137 @@ export class Pixel {
             return;
         }
 
-        this.logger.log(`Старт рисования. Заряды =`, this.mining.charges);
+        if (this.mining.charges === 0) {
+            this.logger.log('Нет зарядов');
+            return;
+        }
 
-        const preparePixel = (x: number, y: number) => {
-            return Number(y + '' + (x + 1));
-        };
+        this.logger.log(`Старт рисования. Заряды = `, this.mining.charges);
 
-        const { x, y, imageSize } = this.template;
+        try {
+            const { pixelColors: templatePixelColors } = await this.getTemplatePixels();
+            const { pixelColors: mainPixelColors } = await this.getMainCanvasPixels();
+            this.logger.log('Успешно получены пиксели изображений');
 
-        const minPixelId = preparePixel(x, y);
-        const maxPixelId = preparePixel(x + imageSize, y + imageSize);
+            let charges = this.mining.charges;
 
-        const colorStrategy = randomArrayItem(['random', 'same']);
-        let color = randomArrayItem(this.COLORS);
-
-        const firstPixelId = random(minPixelId, maxPixelId);
-        let pixelId = firstPixelId;
-
-        const getPixelInValidRange = () => {
-            return pixelId >= minPixelId && pixelId <= maxPixelId;
-        };
-
-        let charges = this.mining.charges;
-
-        while (charges > 0) {
-            if (charges !== this.mining.charges) {
-                if (colorStrategy === 'random') {
-                    color = randomArrayItem(this.COLORS);
+            const strategy = randomArrayItem(['end', 'start', 'center']);
+            const availablePixels = Object.entries(
+                this.getDifferenceFromColorsLine(templatePixelColors, mainPixelColors)
+            );
+            const slicedPixels = (() => {
+                if (strategy === 'start') {
+                    return availablePixels.slice(0, charges);
                 }
 
-                let attempts = 0;
-                while (attempts < 10) {
-                    pixelId = random(firstPixelId - random(5, 10), firstPixelId + random(5, 10));
+                if (strategy === 'end') {
+                    return availablePixels.slice(-charges);
+                }
 
-                    if (getPixelInValidRange()) {
-                        break;
+                const middle = Math.floor(availablePixels.length / 2);
+                return availablePixels.slice(middle, middle + charges);
+            })();
+
+            while (charges > 1) {
+                const [pixelId, newColor] = slicedPixels[charges - 1];
+
+                try {
+                    charges--;
+                    if (!pixelId || !newColor) {
+                        continue;
                     }
 
-                    attempts++;
+                    const newBalance = (await this.api.post('/repaint/start', { pixelId: Number(pixelId), newColor }))
+                        .data.balance;
+
+                    this.logger.log(
+                        `Успешно зарисован #`,
+                        charges,
+                        ' .Получено очков = ',
+                        newBalance - this.mining.userBalance
+                    );
+
+                    this.mining.userBalance = newBalance;
+                } catch (error) {
+                    this.logger.error(`Ошибка рисования пикселя: ${charges}`, this.handleError(error));
                 }
 
-                if (attempts === 10) {
-                    pixelId = firstPixelId;
-                }
+                await sleep(random(5, 10));
             }
-
-            try {
-                await this.api.post('/repaint/start', { pixelId, newColor: color });
-                this.logger.log(`Успешно зарисован #`, charges);
-                charges--;
-            } catch (error) {
-                this.logger.error(`Ошибка рисования пикселя: ${charges}`, this.handleError(error));
-            }
-
-            await sleep(random(2, 10));
+        } catch (error) {
+            this.logger.error('Ошибка получения пикселей шаблона:', this.handleError(error));
         }
+    }
+
+    async getTemplatePixels() {
+        const { url, x: templateX, y: templateY } = this.template;
+
+        return this.getImagePixels({
+            url,
+            mapKey: (x, y) => this.preparePixel(x + templateX, y + templateY),
+        });
+    }
+
+    async getMainCanvasPixels() {
+        const { x: templateX, y: templateY, imageSize: templateSize } = this.template;
+
+        const source = (
+            await this.api.get('https://image.notpx.app/api/v2/image', {
+                baseURL: '',
+                responseType: 'arraybuffer',
+            })
+        ).data;
+
+        return this.getImagePixels({
+            url: await sharp(source).png().toBuffer(),
+            startX: templateX,
+            startY: templateY,
+            height: templateSize,
+            width: templateSize,
+        });
+    }
+
+    async getImagePixels({
+        startX = 0,
+        startY = 0,
+        url,
+        width,
+        mapKey,
+        height,
+    }: {
+        url: string | Buffer;
+        startX?: number;
+        startY?: number;
+        width?: number;
+        height?: number;
+        mapKey?: (x: number, y: number) => number;
+    }) {
+        const templateImage = await loadImage(url);
+        const canvas = createCanvas(templateImage.width, templateImage.height);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(templateImage, 0, 0);
+        const pixelsArray = ctx.getImageData(0, 0, templateImage.width, templateImage.height).data;
+
+        const pixelColors: Record<number, string> = {};
+
+        const endX = startX + (width ?? templateImage.width);
+        const endY = startY + (height ?? templateImage.height);
+
+        for (let y = startY; y < endY; y++) {
+            for (let x = startX; x < endX; x++) {
+                const index = (y * templateImage.width + x) * 4;
+
+                const r = pixelsArray[index];
+                const g = pixelsArray[index + 1];
+                const b = pixelsArray[index + 2];
+                const a = pixelsArray[index + 3];
+
+                const key = mapKey ? mapKey(x, y) : this.preparePixel(x, y);
+                pixelColors[key] = rgbaToHex(r, g, b, a);
+            }
+        }
+
+        return { pixelColors };
     }
 
     async getWebAppDataUrl() {
@@ -626,11 +752,9 @@ export class Pixel {
 
     // ---- HELPERS ----
 
-    private DELAY_HOURS = [1, 2, 3, 7];
+    private DELAY_HOURS = [3, 4, 5, 6, 7];
 
     private LEAGUES = ['bronze', 'silver', 'gold', 'platinum'];
-
-    private MAX_PIXEL_ID = 1000000;
 
     private hardcodeTasks = [
         {
@@ -640,6 +764,14 @@ export class Pixel {
             type: 'condition',
             key: 'paint20pixels',
             checkData: 'paint20pixels',
+        },
+        {
+            condition: () => {
+                return true;
+            },
+            type: 'condition',
+            key: 'jettonTask',
+            checkData: 'jettonTask',
         },
         {
             condition: () => {
@@ -718,18 +850,36 @@ export class Pixel {
     };
 
     private COLORS = [
-        '#6A5CFF',
-        '#e46e6e',
+        '#E46E6E',
         '#FFD635',
         '#7EED56',
         '#00CCC0',
         '#51E9F4',
         '#94B3FF',
-        '#9C6926',
-        '#6D001A',
-        '#bf4300',
-        '#000000',
+        '#E4ABFF',
+        '#FF99AA',
+        '#FFB470',
         '#FFFFFF',
+        '#BE0039',
+        '#FF9600',
+        '#00CC78',
+        '#009EAA',
+        '#3690EA',
+        '#6A5CFF',
+        '#B44AC0',
+        '#FF3881',
+        '#9C6926',
+        '#898D90',
+        '#6D001A',
+        '#BF4300',
+        '#00A368',
+        '#00756F',
+        '#2450A4',
+        '#493AC1',
+        '#811E9F',
+        '#A00357',
+        '#6D482F',
+        '#000000',
     ];
 
     private CONTENT_DATA = [
@@ -767,7 +917,7 @@ export class Pixel {
 
     handleError(error: unknown) {
         if (isAxiosError(error)) {
-            return `Axios error: ${error.status} ${error.code} ${error.message} `;
+            return `Axios error: ${error.status} ${error.code} ${error.message} ${JSON.stringify(error.response?.data ?? {})}`;
         } else {
             return error as string;
         }
@@ -794,6 +944,10 @@ export class Pixel {
             locale: 'en',
             client_timestamp: eventTime,
         };
+    }
+
+    preparePixel(x: number, y: number) {
+        return Number(y + '' + (x + 1));
     }
 
     createAnalyticsApi(agent: SocksProxyAgent | undefined) {
@@ -843,5 +997,18 @@ export class Pixel {
                 Origin: 'https://app.notpx.app',
             },
         });
+    }
+
+    getDifferenceFromColorsLine<Obj1 extends Record<number, string>, Obj2 extends Obj1>(obj1: Obj1, obj2: Obj2) {
+        const result: any = {};
+
+        Object.keys(obj1).forEach((_key) => {
+            const key = _key as keyof Obj1;
+            if (obj1[key] !== obj2[key]) {
+                result[key] = obj1[key];
+            }
+        });
+
+        return result;
     }
 }

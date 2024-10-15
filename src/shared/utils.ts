@@ -106,3 +106,12 @@ export const generateRandomString = (length: number = 8) => {
 
     return randomString;
 };
+
+export const rgbaToHex = (r: number, g: number, b: number, a = 255) => {
+    const toHex = (value: number) => {
+        return value.toString(16).padStart(2, '0').toUpperCase();
+    };
+
+    const hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    return a < 255 ? `${hex}${toHex(a)}` : hex;
+};

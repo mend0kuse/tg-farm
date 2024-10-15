@@ -6,6 +6,6 @@ accounts.xlsx
 proxies.txt
 dist
 roadmap.txt
-test.ts
+test*.ts
 helper.bash
 /db
