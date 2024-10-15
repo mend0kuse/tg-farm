@@ -1,10 +1,9 @@
 {
     "compilerOptions": {
-        "moduleDetection": "force",
-        "module": "preserve",
-        "resolveJsonModule": true,
+        "module": "ESNext",
         "allowJs": true,
         "esModuleInterop": true,
+        "moduleResolution":"node",
         "isolatedModules": true,
         "target": "es2017",
         "forceConsistentCasingInFileNames": true,
