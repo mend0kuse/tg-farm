@@ -53,8 +53,6 @@ export const runPixelWorker = async (user: TAccountData, telegramClient: Telegra
                 isCreated,
                 database: pixelDatabase,
             }).start();
-
-            baseLogger.log(`[PIXEL_${user.index}] Старт воркера`);
         } catch (error) {
             errors++;
             baseLogger.error(`[PIXEL_${user.index}] WORKER ERROR`, error);

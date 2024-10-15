@@ -27,7 +27,7 @@ export class ExcelUtility {
             throw new Error('Неправильный формат файла Excel. Проверьте заголовки.');
         }
 
-        const rows = jsonData.slice(1);
+        const rows = jsonData.slice(1).filter((row) => row.length > 0);
 
         const users: TAccountData[] = rows.map((row) => {
             return {

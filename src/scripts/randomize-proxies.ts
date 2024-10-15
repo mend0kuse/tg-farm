@@ -30,14 +30,16 @@ const worksheet = workbook.Sheets[sheetName];
 
 const jsonData: any[] = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
-const newData = jsonData.map((acc, index) => {
-    if (index === 0) {
-        return acc;
-    }
+const newData = jsonData
+    .filter((row) => row.length > 0)
+    .map((acc, index) => {
+        if (index === 0) {
+            return acc;
+        }
 
-    acc[7] = randomArrayItem(proxies);
-    return acc;
-});
+        acc[7] = randomArrayItem(proxies);
+        return acc;
+    });
 
 const newWorksheet = xlsx.utils.aoa_to_sheet(newData);
 
