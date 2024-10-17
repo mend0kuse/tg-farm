@@ -27,7 +27,6 @@ export const createUserThread = async (user: TAccountData, usersEventBus: EventB
         await Promise.allSettled([
             runHrumWorker(user, telegramClient), // xrum
             runPixelWorker(user, telegramClient), // not pixel
-            runEmpireWorker(user, telegramClient), // xempire
             runCatsWorker(user, telegramClient), // cats
             runVanaWorker(user, telegramClient), // vana
             runDropsWorker(user, telegramClient), // drops
