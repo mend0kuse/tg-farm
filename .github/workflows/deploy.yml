@@ -11,7 +11,6 @@ jobs:
             SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
             SERVER_USER: ${{ secrets.SERVER_USER }}
             SERVER_HOST: ${{ secrets.SERVER_HOST }}
-            SERVER_PATH: ${{ secrets.SERVER_PATH }}
             REPO_PATH: ${{ secrets.REPO_PATH }}
 
         steps:
@@ -23,13 +22,11 @@ jobs:
 
             - name: Deploy to server via SSH
               run: |
-                  ssh-keyscan -H $SERVER_HOST >> ~/.ssh/known_hosts
-
-                  sshpass -p "$SSH_PASSWORD" ssh $SERVER_USER@$SERVER_HOST << 'EOF'
-                  cd ~/$REPO_PATH
+                  sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -T $SERVER_USER@$SERVER_HOST << 'EOF'
+                  cd ~/tg-farm
                   git pull
 
                   docker-compose down
                   docker-compose up -d --build
                   docker image prune -f
-                    EOF
+                  EOF
