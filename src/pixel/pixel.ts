@@ -1,7 +1,5 @@
-import { TelegramClient, tl } from '@mtcute/node';
-import { TAccountData } from '../scripts/accounts-generator';
-import { BaseLogger } from '../shared/logger';
-import axios, { AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
+import { tl } from '@mtcute/node';
+import axios, { AxiosInstance, HttpStatusCode } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { toInputUser } from '@mtcute/node/utils.js';
 import {
@@ -20,92 +18,65 @@ import { loadImage, createCanvas } from 'canvas';
 import sharp from 'sharp';
 import { Centrifuge } from 'centrifuge/build/protobuf';
 import { inflate } from 'fflate';
+import { BaseBot } from '../base-bot/base-bot';
+import { BaseBotConstructor } from '../base-bot/types';
 
-export class Pixel {
-    private account: TAccountData;
-    private database: PixelDatabase;
-    private profile: any;
+export class Pixel extends BaseBot<PixelDatabase> {
     private mining: any;
-    private refCode: string;
     private sessionId: string;
-    private telegramClient: TelegramClient;
-    private logger: BaseLogger;
-    private api: AxiosInstance;
     private analyticsApi: AxiosInstance;
-    private API_URL = 'https://notpx.app/api/v1';
-    private isCreated: boolean = false;
     private template: any;
     private centrifuge: Centrifuge;
     private isListeningPixelChanges = false;
     private mainPixels: Record<string, string> | null = null;
 
-    constructor({
-        account,
-        refCode,
-        isCreated,
-        telegramClient,
-        database,
-    }: {
-        account: TAccountData;
-        refCode: string;
-        telegramClient: TelegramClient;
-        isCreated: boolean;
-        database: PixelDatabase;
-    }) {
-        this.isCreated = isCreated;
-        this.database = database;
-        this.account = account;
-        this.refCode = refCode;
-        this.telegramClient = telegramClient;
-        this.logger = new BaseLogger(`PIXEL_${account.index}`);
+    constructor(params: BaseBotConstructor<PixelDatabase>) {
+        super({
+            ...params,
+            botName: 'PIXEL',
+            apiUrl: 'https://notpx.app/api/v1',
+            httpHeaders: {
+                accept: '*/*',
+                'content-type': 'application/json',
+                'accept-language': 'en-US;q=0.8,en;q=0.7',
+                'sec-ch-ua': '"Not)A;Brand";v="99", "Google Chrome";v="122", "Chromium";v="122"',
+                'sec-ch-ua-mobile': '?1',
+                'sec-ch-ua-platform': '"Android"',
+                'sec-fetch-dest': 'empty',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-site': 'same-site',
+                'User-Agent': params.account.userAgent,
+                priority: 'u=1, i',
+                'Referrer-Policy': 'strict-origin-when-cross-origin',
+                Referer: 'https://app.notpx.app',
+                Origin: 'https://app.notpx.app',
+            },
+        });
 
         this.createAnalyticsApi();
-        this.createPixelApi();
     }
 
     async start() {
-        let cycle = 1;
-        this.api
-            .get('https://ifconfig.me/ip', {
-                baseURL: '',
-            })
-            .then((response) => this.logger.log('IP =', response.data))
-            .catch((error) => this.logger.error('Ошибка получения IP', this.handleError(error)));
+        while (true) {
+            await this.waitCycleDelay({
+                firstCycleRange: [1, 120],
+                othersGetDelay: () => {
+                    const randomHour = randomArrayItem(this.DELAY_HOURS);
+                    return random(randomHour - 0.5, randomHour + 0.5) * 60;
+                },
+            });
 
-        mainLoop: while (true) {
-            const randomHour = randomArrayItem(this.DELAY_HOURS);
-            const delayInMinutes = cycle === 1 ? random(1, 120) : random(randomHour - 0.5, randomHour + 0.5) * 60;
-            this.logger.log(`Задержка ${delayInMinutes} минут перед стартом прохода...`);
-
-            await sleep(delayInMinutes * 60);
-
-            let loginAttempts = 0;
-            loginLoop: while (true) {
-                try {
-                    await this.login();
-                    break loginLoop;
-                } catch (error) {
-                    if (tl.RpcError.is(error, 'FLOOD_WAIT_%d')) {
-                        this.logger.error('FLOOD WAIT', error.seconds * 2);
-                        await sleep(error.seconds * 2);
-                        throw new Error('FLOOD');
-                    }
-
-                    if (loginAttempts > 5) {
-                        throw new Error('5 Неудачных логинов');
-                    }
-
-                    this.logger.error('Неудачный логин, задержка...', this.handleError(error));
-                    await sleep(random(100, 150));
-                    loginAttempts++;
-
-                    continue loginLoop;
-                }
+            try {
+                await this.checkIp();
+            } catch {
+                continue;
             }
+
+            await this.processLogin();
 
             if (!this.profile) {
                 this.logger.error('Профиль не найден');
-                continue mainLoop;
+                continue;
             }
 
             this.logger.accentLog(
@@ -119,21 +90,11 @@ export class Pixel {
 
             await sleep(random(5, 10));
 
-            if (!this.isCreated) {
-                try {
-                    this.database.createAccount({
-                        index: this.account.index,
-                        league: this.profile.league,
-                        friends: this.profile.friends,
-                    });
-                    this.isCreated = true;
-                    this.logger.error('Успешно добавлен в базу');
-                } catch (error) {
-                    this.logger.error('Ошибка добавления в базу', error);
-                }
-            }
-
-            await sleep(random(1, 3));
+            this.createDatabaseAccount({
+                index: this.account.index,
+                league: this.profile.league,
+                friends: this.profile.friends,
+            });
 
             const actions = [
                 this.claimMining,
@@ -180,7 +141,7 @@ export class Pixel {
                 this.logger.error('Ошибка обновления токенов:', error);
             }
 
-            cycle++;
+            this.cycle++;
             this.centrifuge.disconnect();
             this.logger.accentLog('Конец прохода');
         }
@@ -409,7 +370,7 @@ export class Pixel {
     async login() {
         this.logger.log('Старт логина');
 
-        const url = await this.getWebAppDataUrl();
+        const url = await this.getWebAppDataUrl('notpx_bot');
 
         await this.sendPageView(url);
 
@@ -737,25 +698,6 @@ export class Pixel {
         return { pixelColors };
     }
 
-    async getWebAppDataUrl() {
-        const peer = await this.telegramClient.resolvePeer('notpixel');
-
-        const response = await this.telegramClient.call({
-            _: 'messages.requestAppWebView',
-            peer,
-            app: {
-                _: 'inputBotAppShortName',
-                botId: toInputUser(peer),
-                shortName: 'app',
-            },
-            platform: 'Android',
-            startParam: this.refCode,
-            writeAllowed: true,
-        });
-
-        return response.url;
-    }
-
     async getSquadWebAppDataUrl() {
         const peer = await this.telegramClient.resolvePeer('notgames_bot');
 
@@ -980,14 +922,6 @@ export class Pixel {
         '123,34,120,34,58,55,50,56,46,51,53,51,50,56,52,50,52,56,53,52,50,56,44,34,121,34,58,49,57,54,53,56,46,48,57,52,50,56,55,49,53,55,49,56,50,125',
     ];
 
-    handleError(error: unknown) {
-        if (isAxiosError(error)) {
-            return `Axios error: ${error.status} ${error.code} ${error.message} ${JSON.stringify(error.response?.data ?? {})}`;
-        } else {
-            return error as string;
-        }
-    }
-
     generateSessionId(): string {
         return [
             generateRandomString(8),
@@ -1038,34 +972,6 @@ export class Pixel {
                     'eyJhcHBfbmFtZSI6Ik5vdFBpeGVsIiwiYXBwX3VybCI6Imh0dHBzOi8vdC5tZS9ub3RwaXhlbC9hcHAiLCJhcHBfZG9tYWluIjoiaHR0cHM6Ly9hcHAubm90cHguYXBwIn0=!qE41yKlb/OkRyaVhhgdePSZm5Nk7nqsUnsOXDWqNAYE=',
             },
         });
-    }
-
-    createPixelApi() {
-        this.api = axios.create({
-            httpAgent: this.httpAgent,
-            httpsAgent: this.httpAgent,
-            baseURL: this.API_URL,
-            headers: {
-                accept: '*/*',
-                'content-type': 'application/json',
-                'accept-language': 'en-US;q=0.8,en;q=0.7',
-                'sec-ch-ua': '"Not)A;Brand";v="99", "Google Chrome";v="122", "Chromium";v="122"',
-                'sec-ch-ua-mobile': '?1',
-                'sec-ch-ua-platform': '"Android"',
-                'sec-fetch-dest': 'empty',
-                'sec-fetch-mode': 'cors',
-                'sec-fetch-site': 'same-site',
-                'User-Agent': this.account.userAgent,
-                priority: 'u=1, i',
-                'Referrer-Policy': 'strict-origin-when-cross-origin',
-                Referer: 'https://app.notpx.app',
-                Origin: 'https://app.notpx.app',
-            },
-        });
-    }
-
-    get httpAgent() {
-        return this.account.proxy ? new SocksProxyAgent(this.account.proxy) : undefined;
     }
 
     getDifferenceFromColorsLine<Obj1 extends Record<number, string>, Obj2 extends Obj1>(obj1: Obj1, obj2: Obj2) {
