@@ -1,0 +1,35 @@
+name: Node.js CI/CD
+
+on:
+    workflow_dispatch:
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        env:
+            SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+            SERVER_USER: ${{ secrets.SERVER_USER }}
+            SERVER_HOST: ${{ secrets.SERVER_HOST }}
+            SERVER_PATH: ${{ secrets.SERVER_PATH }}
+            REPO_PATH: ${{ secrets.REPO_PATH }}
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v3
+
+            - name: Install sshpass
+              run: sudo apt-get update && sudo apt-get install -y sshpass
+
+            - name: Deploy to server via SSH
+              run: |
+                  ssh-keyscan -H $SERVER_HOST >> ~/.ssh/known_hosts
+
+                  sshpass -p "$SSH_PASSWORD" ssh $SERVER_USER@$SERVER_HOST << 'EOF'
+                  cd ~/$REPO_PATH
+                  git pull
+
+                  docker-compose down
+                  docker-compose up -d --build
+                  docker image prune -f
+                    EOF
