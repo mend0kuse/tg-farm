@@ -3,7 +3,6 @@ import { baseLogger } from './shared/logger';
 import { runCatsWorker } from './cats/worker';
 import { runHrumWorker } from './xrum/worker';
 import { runPixelWorker } from './pixel/worker';
-import { runEmpireWorker } from './xempire/worker';
 import { telegramApi } from './shared/telegram/telegram-api';
 import { parseSocks5Proxy } from './shared/utils';
 import { runDropsWorker } from './drops/worker';

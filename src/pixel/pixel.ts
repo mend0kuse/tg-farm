@@ -18,6 +18,8 @@ import { PixelDatabase } from './database';
 import WebSocket from 'ws';
 import { loadImage, createCanvas } from 'canvas';
 import sharp from 'sharp';
+import { Centrifuge } from 'centrifuge/build/protobuf';
+import { inflate } from 'fflate';
 
 export class Pixel {
     private account: TAccountData;
@@ -32,8 +34,10 @@ export class Pixel {
     private analyticsApi: AxiosInstance;
     private API_URL = 'https://notpx.app/api/v1';
     private isCreated: boolean = false;
-    private ws: WebSocket;
     private template: any;
+    private centrifuge: Centrifuge;
+    private isListeningPixelChanges = false;
+    private mainPixels: Record<string, string> | null = null;
 
     constructor({
         account,
@@ -55,10 +59,8 @@ export class Pixel {
         this.telegramClient = telegramClient;
         this.logger = new BaseLogger(`PIXEL_${account.index}`);
 
-        const agent = account.proxy ? new SocksProxyAgent(account.proxy) : undefined;
-
-        this.createAnalyticsApi(agent);
-        this.createPixelApi(agent);
+        this.createAnalyticsApi();
+        this.createPixelApi();
     }
 
     async start() {
@@ -112,7 +114,7 @@ export class Pixel {
                 this.profile ? `Лига = ${this.profile.league}. \n` : ' '
             );
 
-            this.setupWs();
+            await this.setupCentrifuge();
             await this.getInitialData();
 
             await sleep(random(5, 10));
@@ -179,8 +181,8 @@ export class Pixel {
             }
 
             cycle++;
+            this.centrifuge.disconnect();
             this.logger.accentLog('Конец прохода');
-            this.ws.close();
         }
     }
 
@@ -188,11 +190,70 @@ export class Pixel {
         await Promise.allSettled([this.getMiningStatus(), this.getTemplateById(), this.getMyTemplate()]);
     }
 
-    setupWs() {
-        this.ws = new WebSocket('wss://notpx.app/api/v2/image/ws');
-        this.ws.onopen = () => this.logger.log('WebSocket соединение установлено');
-        this.ws.onerror = (err: any) => this.logger.error('Ошибка ws: ', err);
-        this.ws.onclose = () => this.logger.log('WebSocket соединение завершено');
+    async setupCentrifuge() {
+        try {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            const myWs = function (options) {
+                return class wsClass extends WebSocket {
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore
+                    constructor(...args) {
+                        if (args.length === 1) {
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                            // @ts-ignore
+                            super(...[...args, 'centrifuge-json', ...[options]]);
+                        } else {
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                            // @ts-ignore
+                            super(...[...args, ...[options]]);
+                        }
+                    }
+                };
+            };
+
+            this.centrifuge = new Centrifuge('wss://notpx.app/connection/websocket', {
+                token: this.profile.websocketToken,
+                websocket: myWs({ agent: this.httpAgent }),
+            });
+
+            this.centrifuge.on('connected', (ctx) => this.logger.log('Успешно установлено соединение ws', ctx));
+            this.centrifuge.on('disconnected', (ctx) => this.logger.log('Успешно закончено соединение ws', ctx));
+            this.centrifuge.on('error', (error) => this.logger.error('Ошибка ws', error));
+
+            this.centrifuge.on('publication', (ctx) => {
+                const main = this.mainPixels;
+                if (!main || ctx.channel === 'event:message' || !this.isListeningPixelChanges) {
+                    return;
+                }
+
+                inflate(new Uint8Array(ctx.data), (err, decompressed) => {
+                    if (err) {
+                        this.logger.error('Ошибка распаковки данных:', err);
+                    } else {
+                        const data = JSON.parse(new TextDecoder().decode(decompressed));
+
+                        for (const color in data) {
+                            if (color.includes('171F2A')) continue;
+
+                            const preparedColor = `#${color}`;
+
+                            for (const id of data[color]) {
+                                if (!main[id]) continue;
+
+                                if (main[id] !== preparedColor) {
+                                    main[id] = preparedColor;
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
+            this.centrifuge.connect();
+        } catch (error) {
+            this.logger.error('Ошибка подключения к centrifuge', this.handleError(error));
+        }
     }
 
     async getMyTemplate() {
@@ -515,50 +576,82 @@ export class Pixel {
 
         try {
             const { pixelColors: templatePixelColors } = await this.getTemplatePixels();
-            const { pixelColors: mainPixelColors } = await this.getMainCanvasPixels();
-            this.logger.log('Успешно получены пиксели изображений');
+            await this.getMainCanvasPixels();
+            this.isListeningPixelChanges = true;
 
-            let charges = this.mining.charges;
+            if (!this.mainPixels) {
+                this.logger.log('Не удалось получить mainPixels');
+                return;
+            }
 
-            const strategy = randomArrayItem(['end', 'start', 'center']);
-            const availablePixels = Object.entries(
-                this.getDifferenceFromColorsLine(templatePixelColors, mainPixelColors)
-            );
-            const slicedPixels = (() => {
+            const charges = this.mining.charges;
+            let count = 0;
+
+            const strategy = randomArrayItem(['end', 'start', 'center-right', 'center-left'] as const);
+
+            const availablePixels = (() => {
+                const diff = Object.entries(this.getDifferenceFromColorsLine(templatePixelColors, this.mainPixels));
+
                 if (strategy === 'start') {
-                    return availablePixels.slice(0, charges);
+                    return diff;
                 }
 
                 if (strategy === 'end') {
-                    return availablePixels.slice(-charges);
+                    return diff.reverse();
                 }
 
-                const middle = Math.floor(availablePixels.length / 2);
-                return availablePixels.slice(middle, middle + charges);
+                const center = Math.floor(diff.length / 2);
+
+                if (strategy === 'center-right') {
+                    return diff.slice(center);
+                }
+
+                return diff.slice(0, center).reverse();
             })();
 
-            while (charges > 1) {
-                const [pixelId, newColor] = slicedPixels[charges - 1];
+            this.logger.log(
+                `Успешно получены пиксели изображений. Выбрана стратегия ${strategy}. Доступно пикселей для зарисовки ${availablePixels.length}`
+            );
+
+            while (count < charges) {
+                let pixelId = null;
+                let newColor = null;
+
+                while (true) {
+                    if (availablePixels.length === 0) {
+                        break;
+                    }
+
+                    [pixelId, newColor] = availablePixels.shift()!;
+                    if (this.mainPixels[pixelId] !== templatePixelColors[pixelId]) {
+                        break;
+                    }
+
+                    this.logger.log('Выбранный пиксель уже зарисован. Ищем дальше...');
+                    pixelId = null;
+                    newColor = null;
+                }
+
+                if (!pixelId || !newColor) {
+                    break;
+                }
 
                 try {
-                    charges--;
-                    if (!pixelId || !newColor) {
-                        continue;
-                    }
+                    count++;
 
                     const newBalance = (await this.api.post('/repaint/start', { pixelId: Number(pixelId), newColor }))
                         .data.balance;
 
                     this.logger.log(
                         `Успешно зарисован #`,
-                        charges,
+                        count,
                         ' .Получено очков = ',
                         newBalance - this.mining.userBalance
                     );
 
                     this.mining.userBalance = newBalance;
                 } catch (error) {
-                    this.logger.error(`Ошибка рисования пикселя: ${charges}`, this.handleError(error));
+                    this.logger.error(`Ошибка рисования пикселя: ${count}`, this.handleError(error));
                 }
 
                 await sleep(random(5, 10));
@@ -566,6 +659,9 @@ export class Pixel {
         } catch (error) {
             this.logger.error('Ошибка получения пикселей шаблона:', this.handleError(error));
         }
+
+        this.isListeningPixelChanges = false;
+        this.mainPixels = null;
     }
 
     async getTemplatePixels() {
@@ -587,13 +683,15 @@ export class Pixel {
             })
         ).data;
 
-        return this.getImagePixels({
-            url: await sharp(source).png().toBuffer(),
-            startX: templateX,
-            startY: templateY,
-            height: templateSize,
-            width: templateSize,
-        });
+        this.mainPixels = (
+            await this.getImagePixels({
+                url: await sharp(source).png().toBuffer(),
+                startX: templateX,
+                startY: templateY,
+                height: templateSize,
+                width: templateSize,
+            })
+        ).pixelColors;
     }
 
     async getImagePixels({
@@ -617,7 +715,7 @@ export class Pixel {
         ctx.drawImage(templateImage, 0, 0);
         const pixelsArray = ctx.getImageData(0, 0, templateImage.width, templateImage.height).data;
 
-        const pixelColors: Record<number, string> = {};
+        const pixelColors: Record<string, string> = {};
 
         const endX = startX + (width ?? templateImage.width);
         const endY = startY + (height ?? templateImage.height);
@@ -752,7 +850,7 @@ export class Pixel {
 
     // ---- HELPERS ----
 
-    private DELAY_HOURS = [3, 4, 5, 6, 7];
+    private DELAY_HOURS = [1, 2, 3, 4, 5];
 
     private LEAGUES = ['bronze', 'silver', 'gold', 'platinum'];
 
@@ -849,39 +947,6 @@ export class Pixel {
         reChargeSpeed: 11,
     };
 
-    private COLORS = [
-        '#E46E6E',
-        '#FFD635',
-        '#7EED56',
-        '#00CCC0',
-        '#51E9F4',
-        '#94B3FF',
-        '#E4ABFF',
-        '#FF99AA',
-        '#FFB470',
-        '#FFFFFF',
-        '#BE0039',
-        '#FF9600',
-        '#00CC78',
-        '#009EAA',
-        '#3690EA',
-        '#6A5CFF',
-        '#B44AC0',
-        '#FF3881',
-        '#9C6926',
-        '#898D90',
-        '#6D001A',
-        '#BF4300',
-        '#00A368',
-        '#00756F',
-        '#2450A4',
-        '#493AC1',
-        '#811E9F',
-        '#A00357',
-        '#6D482F',
-        '#000000',
-    ];
-
     private CONTENT_DATA = [
         '123,34,120,34,58,50,49,55,46,57,56,48,54,52,51,52,57,57,49,50,57,54,44,34,121,34,58,51,50,50,48,46,56,49,50,52,57,51,51,57,52,53,53,55,52,125',
         '123,34,120,34,58,51,51,54,46,55,52,48,55,55,57,56,55,49,54,51,52,52,44,34,121,34,58,54,49,56,49,46,55,51,55,52,55,56,52,52,50,49,52,52,125',
@@ -950,10 +1015,10 @@ export class Pixel {
         return Number(y + '' + (x + 1));
     }
 
-    createAnalyticsApi(agent: SocksProxyAgent | undefined) {
+    createAnalyticsApi() {
         this.analyticsApi = axios.create({
-            httpAgent: agent,
-            httpsAgent: agent,
+            httpAgent: this.httpAgent,
+            httpsAgent: this.httpAgent,
             baseURL: 'https://tganalytics.xyz',
             headers: {
                 accept: '*/*',
@@ -975,10 +1040,10 @@ export class Pixel {
         });
     }
 
-    createPixelApi(agent: SocksProxyAgent | undefined) {
+    createPixelApi() {
         this.api = axios.create({
-            httpAgent: agent,
-            httpsAgent: agent,
+            httpAgent: this.httpAgent,
+            httpsAgent: this.httpAgent,
             baseURL: this.API_URL,
             headers: {
                 accept: '*/*',
@@ -997,6 +1062,10 @@ export class Pixel {
                 Origin: 'https://app.notpx.app',
             },
         });
+    }
+
+    get httpAgent() {
+        return this.account.proxy ? new SocksProxyAgent(this.account.proxy) : undefined;
     }
 
     getDifferenceFromColorsLine<Obj1 extends Record<number, string>, Obj2 extends Obj1>(obj1: Obj1, obj2: Obj2) {

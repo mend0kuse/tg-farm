@@ -42,6 +42,7 @@
         "centrifuge": "^5.2.2",
         "crypto": "^1.0.1",
         "dotenv": "^16.4.5",
+        "fflate": "^0.8.2",
         "moment-timezone": "^0.5.45",
         "sharp": "^0.33.5",
         "socks-proxy-agent": "^8.0.4",
