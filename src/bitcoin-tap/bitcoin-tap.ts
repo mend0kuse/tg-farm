@@ -250,13 +250,13 @@ export class BitcoinTap {
     async getRouletteStats() {
         try {
             const { stats } = (await this.api.get(`/roulette/event/stats/?user_id=${this.profile.id}`)).data;
-            for (const key in stats) {
-                if (key !== 'points') {
-                    await telegramApi.sendBotNotification(
-                        `[BITCOIN-TAP_${this.account.index}] Найден ключ ${key} в результат рулетки. Значение ${JSON.stringify(stats[key])}`
-                    );
-                }
-            }
+            // for (const key in stats) {
+            //     if (key !== 'points') {
+            //         await telegramApi.sendBotNotification(
+            //             `[BITCOIN-TAP_${this.account.index}] Найден ключ ${key} в результат рулетки. Значение ${JSON.stringify(stats[key])}`
+            //         );
+            //     }
+            // }
             this.logger.log('Успешно получена статистика рулетки');
         } catch (error) {
             this.logger.error('Ошибка получения статистики рулетки', this.handleError(error));
