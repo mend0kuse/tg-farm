@@ -4,7 +4,7 @@ import { BaseLogger } from '../shared/logger';
 import axios, { AxiosError, AxiosInstance, HttpStatusCode, isAxiosError } from 'axios';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { toInputUser } from '@mtcute/node/utils.js';
-import { random, sleep, shuffleArray } from '../shared/utils';
+import { random, sleep, shuffleArray, randomArrayItem } from '../shared/utils';
 import { telegramApi } from '../shared/telegram/telegram-api';
 import { DropsDatabase } from './database';
 
@@ -20,6 +20,7 @@ export class Drops {
     private API_URL = 'https://api.miniapp.dropstab.com/api';
     private isCreated: boolean = false;
     private syncInterval: any;
+    private orders: any;
     private activeTasksCategories: Array<{ quests: any[] }> = [];
 
     constructor({
@@ -121,7 +122,7 @@ export class Drops {
 
             await sleep(random(3, 5));
 
-            const actions = [this.completeTasks, this.claimFriendsReward];
+            const actions = [this.completeTasks, this.claimFriendsReward, this.completeOrders];
 
             shuffleArray(actions);
 
@@ -173,6 +174,57 @@ export class Drops {
             }
 
             throw _error;
+        }
+    }
+
+    async completeOrders() {
+        this.logger.log('Выполнение трейдов');
+
+        for (const { period, order } of this.orders?.periods ?? []) {
+            if (this.profile.balance < period.unlockThreshold) {
+                this.logger.log('Трейд недоступен с id', period.id);
+                continue;
+            }
+
+            if (order?.status === 'PENDING') {
+                this.logger.log('Трейд уже сделан с id', period.id);
+                continue;
+            }
+
+            try {
+                if (order) {
+                    await sleep(random(1, 5));
+                    await this.api.put(`/order/${order.id}/markUserChecked`);
+                    continue;
+                }
+
+                await sleep(random(1, 5));
+
+                const coins = (await this.api.get('/order/coins')).data;
+                const selectedCoin: any = randomArrayItem(coins.filter((coin: any) => !!coin.actual));
+
+                await sleep(random(2, 5));
+                await this.api.get(`/order/coinStats/${selectedCoin.id}`);
+
+                await sleep(random(2, 5));
+                await this.api.post('/order', {
+                    coinId: selectedCoin.id,
+                    periodId: period.id,
+                    short: randomArrayItem([false, true]),
+                });
+
+                this.logger.log('Успешно сделан трейд в периоде', period.id);
+            } catch (error) {
+                this.logger.error('Ошибка выполнения ордера', this.handleError(error));
+            }
+        }
+    }
+
+    async getOrders() {
+        try {
+            this.orders = (await this.api.get('/order')).data;
+        } catch (error) {
+            this.logger.error('Ошибка получения ордеров', this.handleError(error));
         }
     }
 
@@ -266,6 +318,7 @@ export class Drops {
     async getData() {
         await Promise.allSettled([
             this.getProfile(),
+            this.getOrders(),
             this.getRefLink(),
             this.etherDropSub(),
             this.getActiveTasks(),
