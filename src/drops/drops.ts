@@ -194,7 +194,8 @@ export class Drops {
             try {
                 if (order) {
                     await sleep(random(1, 5));
-                    await this.api.put(`/order/${order.id}/markUserChecked`);
+                    const action = order.status === 'CLAIM_AVAILABLE' ? 'claim' : 'markUserChecked';
+                    await this.api.put(`/order/${order.id}/${action}`);
                     continue;
                 }
 

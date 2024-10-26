@@ -815,6 +815,14 @@ export class Pixel extends BaseBot<PixelDatabase> {
         },
         {
             condition: () => {
+                return true;
+            },
+            type: 'condition',
+            key: 'boinkTask',
+            checkData: 'boinkTask',
+        },
+        {
+            condition: () => {
                 return this.profile.friends >= 3;
             },
             type: 'condition',
