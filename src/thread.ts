@@ -27,7 +27,7 @@ export const createUserThread = async (user: TAccountData, usersEventBus: EventB
             runHrumWorker(user, telegramClient), // xrum
             runPixelWorker(user, telegramClient), // not pixel
             runCatsWorker(user, telegramClient), // cats
-            runVanaWorker(user, telegramClient), // vana
+            // runVanaWorker(user, telegramClient), // vana
             runDropsWorker(user, telegramClient), // drops
             runBitcoinTapWorker(user, telegramClient), // bitcoin-tap
             runBlumWorker(user, telegramClient), // blum

@@ -4,6 +4,7 @@ services:
     app:
         build: .
         container_name: tg-farm
+        restart: on-failure
         ports:
             - '9999:9999'
         volumes:
