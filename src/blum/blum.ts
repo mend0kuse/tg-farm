@@ -187,7 +187,7 @@ export class Blum {
             this.getFriendsBalance(),
             this.getPointsBalance(),
             this.getLeaderBoard(),
-            this.getExternalData(),
+            // this.getExternalData(),
         ]);
 
         this.logger.log('Получены начальные данные');

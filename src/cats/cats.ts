@@ -183,7 +183,7 @@ export class Cats {
             }
 
             await sleep(random(5, 10));
-            await this.getExternalData();
+            // await this.getExternalData();
             await this.getDailyTasks();
 
             const actions = [
